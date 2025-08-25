@@ -23,12 +23,15 @@ import {
   updateSetting,
 } from './src/utils/storage';
 import { handleError, safeAsync } from './src/utils/error-handler';
+// COMMENTED OUT - WILL IMPLEMENT LATER
+/*
 import {
   initializePurchases,
   getCustomerInfo,
   mockPurchaseAdRemoval,
   restorePurchases,
 } from './src/utils/purchases';
+*/
 
 /**
  * Main application component
@@ -48,11 +51,13 @@ export default function App(): JSX.Element {
    */
   const initializeApp = useCallback(async () => {
     try {
-      // Initialize RevenueCat (non-blocking)
+      // Initialize RevenueCat (non-blocking) - COMMENTED OUT
+      /*
       safeAsync(
         () => initializePurchases(),
         { component: 'App', action: 'initializePurchases' }
       );
+      */
 
       // Load saved data
       const [savedHighScores, savedSettings] = await Promise.all([
@@ -71,7 +76,8 @@ export default function App(): JSX.Element {
       setHighScores(savedHighScores || []);
       setSettings(savedSettings || { soundEnabled: true, vibrationEnabled: true, adRemovalPurchased: false });
 
-      // Check purchase status
+      // Check purchase status - COMMENTED OUT
+      /*
       const customerInfo = await safeAsync(
         () => getCustomerInfo(),
         { component: 'App', action: 'getCustomerInfo' }
@@ -87,6 +93,7 @@ export default function App(): JSX.Element {
           setSettings(prev => prev ? { ...prev, adRemovalPurchased: hasAdRemoval } : null);
         }
       }
+      */
 
       setIsInitialized(true);
     } catch (error) {
@@ -157,8 +164,9 @@ export default function App(): JSX.Element {
   }, []);
 
   /**
-   * Handles ad removal purchase
+   * Handles ad removal purchase - COMMENTED OUT
    */
+  /*
   const handlePurchaseAdRemoval = useCallback(async () => {
     try {
       // For demo purposes, use mock purchase
@@ -190,10 +198,12 @@ export default function App(): JSX.Element {
       );
     }
   }, []);
+  */
 
   /**
-   * Handles purchase restoration
+   * Handles purchase restoration - COMMENTED OUT
    */
+  /*
   const handleRestorePurchases = useCallback(async () => {
     try {
       const result = await restorePurchases();
@@ -231,6 +241,7 @@ export default function App(): JSX.Element {
       );
     }
   }, []);
+  */
 
   // Don't render until initialized
   if (!isInitialized || !settings) {
@@ -255,12 +266,12 @@ export default function App(): JSX.Element {
           score={gameState?.score || 0}
           timeElapsed={gameState?.timeElapsed || 0}
           highScores={highScores}
-          hasAdRemoval={settings.adRemovalPurchased}
+          // hasAdRemoval={settings.adRemovalPurchased}
           onStartGame={startGame}
           onRestartGame={restartGame}
           onShowHighScores={showHighScores}
-          onPurchaseAdRemoval={handlePurchaseAdRemoval}
-          onRestorePurchases={handleRestorePurchases}
+          // onPurchaseAdRemoval={handlePurchaseAdRemoval}
+          // onRestorePurchases={handleRestorePurchases}
         />
       </View>
     </ErrorBoundary>

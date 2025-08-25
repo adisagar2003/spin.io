@@ -24,14 +24,15 @@ interface GameUIProps {
   timeElapsed: number;
   /** High scores array */
   highScores: HighScore[];
-  /** Whether ad removal is purchased */
-  hasAdRemoval: boolean;
+  /** Whether ad removal is purchased - COMMENTED OUT */
+  // hasAdRemoval: boolean;
   /** Callbacks */
   onStartGame: () => void;
   onRestartGame: () => void;
   onShowHighScores: () => void;
-  onPurchaseAdRemoval: () => void;
-  onRestorePurchases: () => void;
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  // onPurchaseAdRemoval: () => void;
+  // onRestorePurchases: () => void;
 }
 
 /**
@@ -43,22 +44,25 @@ export const GameUI: React.FC<GameUIProps> = ({
   score,
   timeElapsed,
   highScores,
-  hasAdRemoval,
+  // hasAdRemoval,
   onStartGame,
   onRestartGame,
   onShowHighScores,
-  onPurchaseAdRemoval,
-  onRestorePurchases,
+  // onPurchaseAdRemoval,
+  // onRestorePurchases,
 }) => {
   const [showHighScores, setShowHighScores] = useState(false);
-  const [showPurchase, setShowPurchase] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  // const [showPurchase, setShowPurchase] = useState(false);
+  // const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   const handleShowHighScores = useCallback(() => {
     setShowHighScores(true);
     onShowHighScores();
   }, [onShowHighScores]);
 
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   const handlePurchase = useCallback(async () => {
     setPurchaseLoading(true);
     setShowPurchase(false);
@@ -79,6 +83,7 @@ export const GameUI: React.FC<GameUIProps> = ({
       setPurchaseLoading(false);
     }
   }, [onRestorePurchases]);
+  */
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -98,8 +103,8 @@ export const GameUI: React.FC<GameUIProps> = ({
         <MainMenu
           onStartGame={onStartGame}
           onShowHighScores={handleShowHighScores}
-          onShowPurchase={() => setShowPurchase(true)}
-          hasAdRemoval={hasAdRemoval}
+          // onShowPurchase={() => setShowPurchase(true)}
+          // hasAdRemoval={hasAdRemoval}
         />
       )}
 
@@ -121,7 +126,9 @@ export const GameUI: React.FC<GameUIProps> = ({
         onClose={() => setShowHighScores(false)}
       />
 
+      {/* COMMENTED OUT - WILL IMPLEMENT LATER */}
       {/* Purchase Modal */}
+      {/*
       <PurchaseModal
         visible={showPurchase}
         onClose={() => setShowPurchase(false)}
@@ -131,12 +138,14 @@ export const GameUI: React.FC<GameUIProps> = ({
       />
 
       {/* Loading Overlay */}
+      {/*
       {purchaseLoading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={COLORS.SPINNER} />
           <Text style={styles.loadingText}>Processing...</Text>
         </View>
       )}
+      */
     </View>
   );
 };
@@ -176,9 +185,9 @@ GameHUD.displayName = 'GameHUD';
 const MainMenu: React.FC<{
   onStartGame: () => void;
   onShowHighScores: () => void;
-  onShowPurchase: () => void;
-  hasAdRemoval: boolean;
-}> = ({ onStartGame, onShowHighScores, onShowPurchase, hasAdRemoval }) => (
+  // onShowPurchase: () => void;
+  // hasAdRemoval: boolean;
+}> = ({ onStartGame, onShowHighScores /*, onShowPurchase, hasAdRemoval*/ }) => (
   <View style={styles.menu}>
     <Text style={styles.title}>GoGoGoGo</Text>
     <Text style={styles.subtitle}>Fidget Spinner Chaos</Text>
@@ -187,6 +196,8 @@ const MainMenu: React.FC<{
       <MenuButton title="START GAME" onPress={onStartGame} primary />
       <MenuButton title="HIGH SCORES" onPress={onShowHighScores} />
       
+      {/* COMMENTED OUT - WILL IMPLEMENT LATER */}
+      {/*
       {!hasAdRemoval && (
         <MenuButton 
           title="REMOVE ADS - $2.99" 
@@ -194,6 +205,7 @@ const MainMenu: React.FC<{
           style={styles.purchaseButton}
         />
       )}
+      */}
     </View>
     
     <Text style={styles.instructions}>
@@ -305,8 +317,9 @@ const HighScoresModal: React.FC<{
 );
 
 /**
- * Purchase modal
+ * Purchase modal - COMMENTED OUT - WILL IMPLEMENT LATER
  */
+/*
 const PurchaseModal: React.FC<{
   visible: boolean;
   onClose: () => void;
@@ -350,6 +363,7 @@ const PurchaseModal: React.FC<{
     </View>
   </Modal>
 );
+*/
 
 const styles = StyleSheet.create({
   container: {

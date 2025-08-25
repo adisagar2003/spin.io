@@ -1,9 +1,12 @@
 /**
  * RevenueCat integration for in-app purchases
  * Handles subscription and purchase management
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
 
 // Mock RevenueCat types for development
+// COMMENTED OUT - WILL IMPLEMENT LATER
+/*
 interface PurchasesOffering {
   identifier: string;
   availablePackages: PurchasesPackage[];
@@ -23,8 +26,21 @@ interface CustomerInfo {
     active: Record<string, any>;
   };
 }
+*/
+
+/**
+ * Helper function to safely check entitlements
+ * COMMENTED OUT - WILL IMPLEMENT LATER
+ */
+/*
+const hasEntitlement = (customerInfo: CustomerInfo, entitlement: string): boolean => {
+  return Boolean(customerInfo.entitlements.active?.[entitlement]);
+};
+*/
 
 // Mock Purchases object for development
+// COMMENTED OUT - WILL IMPLEMENT LATER
+/*
 const Purchases = {
   configure: async (config: any) => Promise.resolve(),
   getOfferings: async (): Promise<{ [key: string]: PurchasesOffering }> => ({
@@ -51,19 +67,26 @@ const Purchases = {
     }
   }),
   getCustomerInfo: async (): Promise<CustomerInfo> => ({
-    entitlements: { active: { ad_removal: undefined } }
+    entitlements: { active: {} }
   })
 };
+*/
+// COMMENTED OUT - WILL IMPLEMENT LATER
+/*
 import { Platform } from 'react-native';
 import { PurchaseProduct } from '../types';
 import { getRevenueCatConfig, PRODUCT_IDS, ENTITLEMENTS } from '../config/revenue-cat';
 import { logError, logInfo, logWarn } from './logger';
+*/
 
 /**
  * Initialize RevenueCat SDK
  * Call this once when the app starts
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
 export const initializePurchases = async (): Promise<void> => {
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   try {
     const config = getRevenueCatConfig();
     
@@ -74,13 +97,17 @@ export const initializePurchases = async (): Promise<void> => {
     logError('Failed to initialize RevenueCat', 'Purchases', error);
     throw error; // Re-throw for proper error handling upstream
   }
+  */
 };
 
 /**
  * Get available offerings/products
  * @returns Array of available purchase products
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
-export const getAvailableProducts = async (): Promise<PurchaseProduct[]> => {
+export const getAvailableProducts = async (): Promise<any[]> => {
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   try {
     const offerings = await Purchases.getOfferings();
     const products: PurchaseProduct[] = [];
@@ -102,18 +129,23 @@ export const getAvailableProducts = async (): Promise<PurchaseProduct[]> => {
     logError('Failed to get available products', 'Purchases', error);
     return [];
   }
+  */
+  return [];
 };
 
 /**
  * Purchase a product
  * @param productIdentifier - Product identifier to purchase
  * @returns Success status and customer info
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
 export const purchaseProduct = async (productIdentifier: string): Promise<{
   success: boolean;
   hasAdRemoval: boolean;
   error?: string;
 }> => {
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   try {
     const offerings = await Purchases.getOfferings();
     let packageToPurchase: PurchasesPackage | undefined;
@@ -131,7 +163,7 @@ export const purchaseProduct = async (productIdentifier: string): Promise<{
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     
     // Check if user now has ad removal entitlement
-    const hasAdRemoval = Boolean(customerInfo.entitlements.active.ad_removal);
+    const hasAdRemoval = hasEntitlement(customerInfo, 'ad_removal');
     
     return { success: true, hasAdRemoval };
   } catch (error: any) {
@@ -148,21 +180,26 @@ export const purchaseProduct = async (productIdentifier: string): Promise<{
       error: error.message || 'Purchase failed' 
     };
   }
+  */
+  return { success: false, hasAdRemoval: false, error: 'Purchase functionality disabled' };
 };
 
 /**
  * Restore purchases for the current user
  * @returns Restoration status and entitlements
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
 export const restorePurchases = async (): Promise<{
   success: boolean;
   hasAdRemoval: boolean;
   error?: string;
 }> => {
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   try {
     const { customerInfo } = await Purchases.restorePurchases();
     
-    const hasAdRemoval = Boolean(customerInfo.entitlements.active.ad_removal);
+    const hasAdRemoval = hasEntitlement(customerInfo, 'ad_removal');
     
     return { success: true, hasAdRemoval };
   } catch (error: any) {
@@ -173,38 +210,50 @@ export const restorePurchases = async (): Promise<{
       error: error.message || 'Restore failed' 
     };
   }
+  */
+  return { success: false, hasAdRemoval: false, error: 'Purchase functionality disabled' };
 };
 
 /**
  * Check current customer entitlements
  * @returns Current entitlement status
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
 export const getCustomerInfo = async (): Promise<{
   hasAdRemoval: boolean;
   error?: string;
 }> => {
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    const hasAdRemoval = Boolean(customerInfo.entitlements.active.ad_removal);
+    const hasAdRemoval = hasEntitlement(customerInfo, 'ad_removal');
     
     return { hasAdRemoval };
   } catch (error: any) {
     logError('Failed to get customer info', 'Purchases', error);
     return { hasAdRemoval: false, error: error.message };
   }
+  */
+  return { hasAdRemoval: false };
 };
 
 /**
  * Mock purchase for development/testing
  * @returns Mock successful purchase
+ * COMMENTED OUT - WILL IMPLEMENT LATER
  */
 export const mockPurchaseAdRemoval = async (): Promise<{
   success: boolean;
   hasAdRemoval: boolean;
 }> => {
+  // COMMENTED OUT - WILL IMPLEMENT LATER
+  /*
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   logInfo('Mock purchase: Ad removal activated', 'Purchases');
   return { success: true, hasAdRemoval: true };
+  */
+  return { success: false, hasAdRemoval: false };
 };
