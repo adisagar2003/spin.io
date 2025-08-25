@@ -2,7 +2,7 @@
  * Cross-platform input handler for touch, mouse, and keyboard controls
  */
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { Platform, GestureResponderEvent, PanResponder } from 'react-native';
 import { Vector2, InputState, KeyboardControlMap, KeyboardControlKey } from '../types';
 import { createVector2, normalize, distance } from '@utils/math';
@@ -47,11 +47,16 @@ export const useInputHandler = ({
   // Track pressed keys for keyboard input
   const pressedKeysRef = useRef<Set<KeyboardControlKey>>(new Set());
   const keyboardActiveRef = useRef<boolean>(false);
+  
+  // Throttle keyboard input to prevent excessive updates
+  const lastKeyboardUpdateRef = useRef<number>(0);
+  const KEYBOARD_THROTTLE_MS = 16; // ~60fps
 
-  const centerRef = useRef<Vector2>(createVector2(canvasWidth / 2, canvasHeight / 2));
-
-  // Update center when canvas size changes
-  centerRef.current = createVector2(canvasWidth / 2, canvasHeight / 2);
+  // Memoize center calculation for performance
+  const center = useMemo(() => 
+    createVector2(canvasWidth / 2, canvasHeight / 2),
+    [canvasWidth, canvasHeight]
+  );
 
   /**
    * Calculates direction from pressed keyboard keys
@@ -81,7 +86,6 @@ export const useInputHandler = ({
    * @returns Normalized direction vector
    */
   const calculateDirection = useCallback((inputPos: Vector2): Vector2 => {
-    const center = centerRef.current;
     const deltaX = inputPos.x - center.x;
     const deltaY = inputPos.y - center.y;
     const dist = distance(inputPos, center);
@@ -92,7 +96,7 @@ export const useInputHandler = ({
     }
     
     return normalize(createVector2(deltaX, deltaY));
-  }, [deadZone]);
+  }, [center, deadZone]);
 
   /**
    * Combines keyboard and touch/mouse directions with priority system
@@ -176,14 +180,25 @@ export const useInputHandler = ({
     if (event.code in KEYBOARD_CONTROLS) {
       event.preventDefault();
       
+      const now = Date.now();
       const key = event.code as KeyboardControlKey;
+      
+      // Add key to pressed set
+      const wasPressed = pressedKeysRef.current.has(key);
       pressedKeysRef.current.add(key);
       keyboardActiveRef.current = true;
+      
+      // Throttle updates for performance (skip if key already pressed and within throttle window)
+      if (wasPressed && now - lastKeyboardUpdateRef.current < KEYBOARD_THROTTLE_MS) {
+        return;
+      }
+      
+      lastKeyboardUpdateRef.current = now;
       
       // Update input state to indicate keyboard is active
       inputStateRef.current = {
         isActive: true,
-        position: centerRef.current, // Use center for keyboard
+        position: center, // Use center for keyboard
         type: 'keyboard',
         pressedKeys: new Set(pressedKeysRef.current),
         keyboardPriority: true,
@@ -193,7 +208,7 @@ export const useInputHandler = ({
       const finalDirection = combineInputDirections(createVector2(0, 0));
       onDirectionChange(finalDirection);
     }
-  }, [combineInputDirections, onDirectionChange]);
+  }, [center, combineInputDirections, onDirectionChange]);
 
   /**
    * Handles keyboard key up
@@ -227,23 +242,43 @@ export const useInputHandler = ({
     }
   }, [combineInputDirections, calculateDirection, onDirectionChange, onInputStop]);
 
+  // Clear keyboard state when losing focus
+  const handleWindowBlur = useCallback(() => {
+    if (keyboardActiveRef.current && pressedKeysRef.current.size > 0) {
+      // Clear all pressed keys and stop input
+      pressedKeysRef.current.clear();
+      keyboardActiveRef.current = false;
+      inputStateRef.current.isActive = false;
+      onInputStop();
+    }
+  }, [onInputStop]);
+
   // Set up keyboard event listeners on web platform
   useEffect(() => {
     if (Platform.OS === 'web') {
       // Add event listeners to document for global keyboard handling
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('keyup', handleKeyUp);
+      document.addEventListener('keydown', handleKeyDown, { passive: false });
+      document.addEventListener('keyup', handleKeyUp, { passive: false });
+      
+      // Handle window blur to prevent stuck keys
+      window.addEventListener('blur', handleWindowBlur);
+      
+      // Also handle visibility change for mobile web
+      document.addEventListener('visibilitychange', handleWindowBlur);
       
       // Cleanup on unmount
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
         document.removeEventListener('keyup', handleKeyUp);
+        window.removeEventListener('blur', handleWindowBlur);
+        document.removeEventListener('visibilitychange', handleWindowBlur);
+        
         // Clear pressed keys on cleanup
         pressedKeysRef.current.clear();
         keyboardActiveRef.current = false;
       };
     }
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleKeyDown, handleKeyUp, handleWindowBlur]);
 
   // Create PanResponder for gesture handling
   const panResponder = useRef(
