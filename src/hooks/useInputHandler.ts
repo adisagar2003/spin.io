@@ -97,6 +97,23 @@ export const useInputHandler = ({
   }, [deadZone]);
 
   /**
+   * Combines keyboard and touch/mouse directions with priority system
+   * @param touchDirection - Direction from touch/mouse input
+   * @returns Final direction vector (keyboard takes priority)
+   */
+  const combineInputDirections = useCallback((touchDirection: Vector2): Vector2 => {
+    const keyboardDirection = calculateKeyboardDirection();
+    
+    // Keyboard takes priority when active
+    if (keyboardActiveRef.current && (keyboardDirection.x !== 0 || keyboardDirection.y !== 0)) {
+      return keyboardDirection;
+    }
+    
+    // Fall back to touch/mouse input
+    return touchDirection;
+  }, [calculateKeyboardDirection]);
+
+  /**
    * Handles input start (touch/mouse down)
    * @param event - Gesture event
    */
@@ -104,21 +121,28 @@ export const useInputHandler = ({
     const { locationX, locationY } = event.nativeEvent;
     const inputPos = createVector2(locationX || 0, locationY || 0);
     
-    inputStateRef.current = {
-      isActive: true,
-      position: inputPos,
-      type: Platform.OS === 'web' ? 'mouse' : 'touch',
-    };
+    // Update touch/mouse state (but don't override keyboard state)
+    if (!keyboardActiveRef.current) {
+      inputStateRef.current = {
+        isActive: true,
+        position: inputPos,
+        type: Platform.OS === 'web' ? 'mouse' : 'touch',
+      };
+    }
 
-    const direction = calculateDirection(inputPos);
-    onDirectionChange(direction);
-  }, [calculateDirection, onDirectionChange]);
+    const touchDirection = calculateDirection(inputPos);
+    const finalDirection = combineInputDirections(touchDirection);
+    onDirectionChange(finalDirection);
+  }, [calculateDirection, combineInputDirections, onDirectionChange]);
 
   /**
    * Handles input movement (touch/mouse move)
    * @param event - Gesture event
    */
   const handleInputMove = useCallback((event: GestureResponderEvent) => {
+    // Skip if keyboard is active (keyboard takes priority)
+    if (keyboardActiveRef.current) return;
+    
     if (!inputStateRef.current.isActive) return;
 
     const { locationX, locationY } = event.nativeEvent;
@@ -126,15 +150,20 @@ export const useInputHandler = ({
     
     inputStateRef.current.position = inputPos;
 
-    const direction = calculateDirection(inputPos);
-    onDirectionChange(direction);
-  }, [calculateDirection, onDirectionChange]);
+    const touchDirection = calculateDirection(inputPos);
+    const finalDirection = combineInputDirections(touchDirection);
+    onDirectionChange(finalDirection);
+  }, [calculateDirection, combineInputDirections, onDirectionChange]);
 
   /**
    * Handles input end (touch/mouse up)
    */
   const handleInputEnd = useCallback(() => {
-    inputStateRef.current.isActive = false;
+    // Mark touch/mouse as inactive
+    if (inputStateRef.current.type !== 'keyboard') {
+      inputStateRef.current.isActive = false;
+    }
+    
     // Only stop input if keyboard is also inactive
     if (!keyboardActiveRef.current) {
       onInputStop();
@@ -149,7 +178,6 @@ export const useInputHandler = ({
     if (event.code in KEYBOARD_CONTROLS) {
       event.preventDefault();
       
-      const wasEmpty = pressedKeysRef.current.size === 0;
       pressedKeysRef.current.add(event.code);
       keyboardActiveRef.current = true;
       
@@ -160,10 +188,11 @@ export const useInputHandler = ({
         type: 'keyboard',
       };
       
-      const direction = calculateKeyboardDirection();
-      onDirectionChange(direction);
+      // Use combined input system (keyboard will take priority)
+      const finalDirection = combineInputDirections(createVector2(0, 0));
+      onDirectionChange(finalDirection);
     }
-  }, [calculateKeyboardDirection, onDirectionChange]);
+  }, [combineInputDirections, onDirectionChange]);
 
   /**
    * Handles keyboard key up
@@ -175,19 +204,25 @@ export const useInputHandler = ({
       
       if (pressedKeysRef.current.size === 0) {
         keyboardActiveRef.current = false;
-        inputStateRef.current.isActive = false;
         
-        // Only stop if touch/mouse is also inactive
-        if (!inputStateRef.current.isActive) {
+        // If no touch/mouse input is active, stop completely
+        const isTouchActive = inputStateRef.current.isActive && inputStateRef.current.type !== 'keyboard';
+        if (!isTouchActive) {
+          inputStateRef.current.isActive = false;
           onInputStop();
+        } else {
+          // Fall back to touch/mouse input
+          const touchDirection = calculateDirection(inputStateRef.current.position);
+          const finalDirection = combineInputDirections(touchDirection);
+          onDirectionChange(finalDirection);
         }
       } else {
         // Still have keys pressed, update direction
-        const direction = calculateKeyboardDirection();
-        onDirectionChange(direction);
+        const finalDirection = combineInputDirections(createVector2(0, 0));
+        onDirectionChange(finalDirection);
       }
     }
-  }, [calculateKeyboardDirection, onDirectionChange, onInputStop]);
+  }, [combineInputDirections, calculateDirection, onDirectionChange, onInputStop]);
 
   // Set up keyboard event listeners on web platform
   useEffect(() => {
