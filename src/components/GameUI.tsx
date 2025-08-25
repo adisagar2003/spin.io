@@ -12,6 +12,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { GamePhase, HighScore, COLORS } from '../types';
 
@@ -93,22 +94,24 @@ export const GameUI: React.FC<GameUIProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Game HUD (always visible during gameplay) */}
       {gamePhase === GamePhase.PLAYING && (
         <GameHUD score={score} timeElapsed={timeElapsed} />
       )}
+      
+      {/* Keyboard controls hint for web (subtle overlay) */}
+      {gamePhase === GamePhase.PLAYING && Platform.OS === 'web' && (
+        <View style={styles.keyboardHint}>
+          <Text style={styles.keyboardHintText}>WASD</Text>
+        </View>
+      )}
 
-      {/* Main Menu */}
       {gamePhase === GamePhase.MENU && (
         <MainMenu
           onStartGame={onStartGame}
           onShowHighScores={handleShowHighScores}
-          // onShowPurchase={() => setShowPurchase(true)}
-          // hasAdRemoval={hasAdRemoval}
         />
       )}
 
-      {/* Game Over Screen */}
       {gamePhase === GamePhase.GAME_OVER && (
         <GameOverScreen
           finalScore={score}
@@ -119,33 +122,11 @@ export const GameUI: React.FC<GameUIProps> = ({
         />
       )}
 
-      {/* High Scores Modal */}
       <HighScoresModal
         visible={showHighScores}
         highScores={highScores}
         onClose={() => setShowHighScores(false)}
       />
-
-      {/* COMMENTED OUT - WILL IMPLEMENT LATER */}
-      {/* Purchase Modal */}
-      {/*
-      <PurchaseModal
-        visible={showPurchase}
-        onClose={() => setShowPurchase(false)}
-        onPurchase={handlePurchase}
-        onRestore={handleRestore}
-        loading={purchaseLoading}
-      />
-
-      {/* Loading Overlay */}
-      {/*
-      {purchaseLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={COLORS.SPINNER} />
-          <Text style={styles.loadingText}>Processing...</Text>
-        </View>
-      )}
-      */
     </View>
   );
 };
@@ -209,9 +190,19 @@ const MainMenu: React.FC<{
     </View>
     
     <Text style={styles.instructions}>
-      Touch and drag to steer your fidget spinner!{'\n'}
-      Collect yellow dots to grow larger.{'\n'}
-      Avoid the arena edges!
+      {Platform.OS === 'web' ? (
+        <>
+          Use WASD keys or touch and drag to steer!{'\n'}
+          Collect yellow dots to grow larger.{'\n'}
+          Avoid the arena edges!
+        </>
+      ) : (
+        <>
+          Touch and drag to steer your fidget spinner!{'\n'}
+          Collect yellow dots to grow larger.{'\n'}
+          Avoid the arena edges!
+        </>
+      )}
     </Text>
   </View>
 );
@@ -630,5 +621,25 @@ const styles = StyleSheet.create({
     color: COLORS.UI_TEXT,
     fontSize: 16,
     marginTop: 10,
+  },
+  
+  // Keyboard Hint Styles
+  keyboardHint: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  keyboardHintText: {
+    color: COLORS.UI_TEXT,
+    fontSize: 12,
+    fontWeight: 'bold',
+    opacity: 0.7,
+    textAlign: 'center',
   },
 });
