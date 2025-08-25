@@ -64,6 +64,14 @@ export enum GamePhase {
   GAME_OVER = 'game_over',
 }
 
+/** Keyboard control keys */
+export type KeyboardControlKey = 'KeyW' | 'KeyA' | 'KeyS' | 'KeyD';
+
+/** Keyboard control mapping */
+export interface KeyboardControlMap {
+  readonly [K in KeyboardControlKey]: Vector2;
+}
+
 /** Input state for controls */
 export interface InputState {
   /** Is input currently active */
@@ -72,6 +80,10 @@ export interface InputState {
   position: Vector2;
   /** Input type */
   type: 'touch' | 'mouse' | 'keyboard';
+  /** Currently pressed keys (keyboard only) */
+  pressedKeys?: Set<KeyboardControlKey>;
+  /** Keyboard input priority (when both keyboard and touch/mouse active) */
+  keyboardPriority?: boolean;
 }
 
 /** High score entry */
@@ -136,7 +148,7 @@ export const GAME_CONFIG = {
   SPINNER_SPIN_SPEED_INCREASE: 0.05, // 5% increase per dot
   
   /** Dot settings */
-  DOT_COUNT: 35,
+  DOT_COUNT: 45,
   DOT_MIN_SIZE: 3,
   DOT_MAX_SIZE: 8,
   DOT_GROWTH_MIN: 1,
@@ -160,4 +172,4 @@ export const COLORS = {
   UI_TEXT: '#FFFFFF',
   UI_BUTTON: '#333333',
   UI_BUTTON_TEXT: '#FFFFFF',
-} as const;
+} as const

@@ -4,7 +4,7 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import { Platform, GestureResponderEvent, PanResponder } from 'react-native';
-import { Vector2, InputState } from '../types';
+import { Vector2, InputState, KeyboardControlMap, KeyboardControlKey } from '../types';
 import { createVector2, normalize, distance } from '@utils/math';
 
 interface UseInputHandlerProps {
@@ -20,7 +20,7 @@ interface UseInputHandlerProps {
 }
 
 // Keyboard control mapping for WASD keys
-const KEYBOARD_CONTROLS = {
+const KEYBOARD_CONTROLS: KeyboardControlMap = {
   KeyW: { x: 0, y: -1 },   // Up
   KeyA: { x: -1, y: 0 },   // Left
   KeyS: { x: 0, y: 1 },    // Down
@@ -45,7 +45,7 @@ export const useInputHandler = ({
   });
 
   // Track pressed keys for keyboard input
-  const pressedKeysRef = useRef<Set<string>>(new Set());
+  const pressedKeysRef = useRef<Set<KeyboardControlKey>>(new Set());
   const keyboardActiveRef = useRef<boolean>(false);
 
   const centerRef = useRef<Vector2>(createVector2(canvasWidth / 2, canvasHeight / 2));
@@ -62,11 +62,9 @@ export const useInputHandler = ({
     
     // Accumulate directions from all pressed keys
     pressedKeysRef.current.forEach(key => {
-      if (key in KEYBOARD_CONTROLS) {
-        const keyDirection = KEYBOARD_CONTROLS[key as keyof typeof KEYBOARD_CONTROLS];
-        direction.x += keyDirection.x;
-        direction.y += keyDirection.y;
-      }
+      const keyDirection = KEYBOARD_CONTROLS[key];
+      direction.x += keyDirection.x;
+      direction.y += keyDirection.y;
     });
     
     // Normalize for consistent speed regardless of key combinations
@@ -178,7 +176,8 @@ export const useInputHandler = ({
     if (event.code in KEYBOARD_CONTROLS) {
       event.preventDefault();
       
-      pressedKeysRef.current.add(event.code);
+      const key = event.code as KeyboardControlKey;
+      pressedKeysRef.current.add(key);
       keyboardActiveRef.current = true;
       
       // Update input state to indicate keyboard is active
@@ -186,6 +185,8 @@ export const useInputHandler = ({
         isActive: true,
         position: centerRef.current, // Use center for keyboard
         type: 'keyboard',
+        pressedKeys: new Set(pressedKeysRef.current),
+        keyboardPriority: true,
       };
       
       // Use combined input system (keyboard will take priority)
@@ -200,7 +201,8 @@ export const useInputHandler = ({
    */
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
     if (event.code in KEYBOARD_CONTROLS) {
-      pressedKeysRef.current.delete(event.code);
+      const key = event.code as KeyboardControlKey;
+      pressedKeysRef.current.delete(key);
       
       if (pressedKeysRef.current.size === 0) {
         keyboardActiveRef.current = false;
@@ -217,7 +219,8 @@ export const useInputHandler = ({
           onDirectionChange(finalDirection);
         }
       } else {
-        // Still have keys pressed, update direction
+        // Still have keys pressed, update direction and input state
+        inputStateRef.current.pressedKeys = new Set(pressedKeysRef.current);
         const finalDirection = combineInputDirections(createVector2(0, 0));
         onDirectionChange(finalDirection);
       }
