@@ -20,7 +20,7 @@ import {
   circleCollision,
   randomFloat,
   generateId 
-} from '@utils/math';
+} from '../../utils/math';
 
 export class GameEngine {
   private gameState: GameState;
@@ -73,6 +73,8 @@ export class GameEngine {
     this.gameState = this.createInitialState();
     this.gameState.phase = GamePhase.PLAYING;
     this.gameState.dots = this.generateDots();
+    console.log('🎮 Game started - Generated dots:', this.gameState.dots.length);
+    console.log('🎯 First few dots:', this.gameState.dots.slice(0, 3));
     this.lastUpdateTime = Date.now();
   }
 
@@ -194,10 +196,17 @@ export class GameEngine {
    * Updates dot positions and spawns new ones if needed
    */
   private updateDots(): void {
+    const initialCount = this.gameState.dots.length;
+    
     // Respawn dots if below target count
     while (this.gameState.dots.length < GAME_CONFIG.DOT_COUNT) {
       const newDot = this.createRandomDot();
       this.gameState.dots.push(newDot);
+    }
+    
+    // Log if dots were spawned
+    if (this.gameState.dots.length > initialCount) {
+      console.log('🔄 Respawned dots:', this.gameState.dots.length - initialCount, 'Total:', this.gameState.dots.length);
     }
   }
 

@@ -53,6 +53,10 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     engine.update(deltaTime);
     
     const newGameState = engine.getGameState();
+    
+    // DEBUG: Log game state flow
+    console.log('🎯 GameContainer update - Dots in engine state:', newGameState.dots?.length || 0);
+    
     setGameState(newGameState);
 
     // Notify parent of state changes
@@ -107,8 +111,10 @@ export const GameContainer: React.FC<GameContainerProps> = ({
    * Starts a new game
    */
   const startGame = useCallback(() => {
+    console.log('🚀 GameContainer.startGame() called');
     gameEngineRef.current.startGame();
     const newGameState = gameEngineRef.current.getGameState();
+    console.log('🎮 After startGame - Game phase:', newGameState.phase, 'Dots:', newGameState.dots?.length);
     setGameState(newGameState);
     previousScoreRef.current = newGameState.score;
   }, []);

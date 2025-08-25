@@ -68,9 +68,9 @@ export enum GamePhase {
 export type KeyboardControlKey = 'KeyW' | 'KeyA' | 'KeyS' | 'KeyD';
 
 /** Keyboard control mapping */
-export interface KeyboardControlMap {
+export type KeyboardControlMap = {
   readonly [K in KeyboardControlKey]: Vector2;
-}
+};
 
 /** Input state for controls */
 export interface InputState {
@@ -149,8 +149,8 @@ export const GAME_CONFIG = {
   
   /** Dot settings */
   DOT_COUNT: 45,
-  DOT_MIN_SIZE: 3,
-  DOT_MAX_SIZE: 8,
+  DOT_MIN_SIZE: 20,  // Temporarily increased for debugging
+  DOT_MAX_SIZE: 30,  // Temporarily increased for debugging
   DOT_GROWTH_MIN: 1,
   DOT_GROWTH_MAX: 5,
   DOT_RESPAWN_MARGIN: 50,
@@ -168,7 +168,7 @@ export const GAME_CONFIG = {
 export const COLORS = {
   BACKGROUND: '#000000',
   SPINNER: '#00FF88',
-  DOT: '#FFD700',
+  DOT: '#FF0000',  // Changed to bright red for debugging visibility
   UI_TEXT: '#FFFFFF',
   UI_BUTTON: '#333333',
   UI_BUTTON_TEXT: '#FFFFFF',

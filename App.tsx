@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, StatusBar, Alert } from 'react-native';
-import { GameContainer } from './src/features/game/GameContainer';
+import { GameContainerWithRef } from './src/features/game/GameContainer';
 import { GameUI } from './src/components/GameUI';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { 
@@ -145,8 +145,9 @@ export default function App(): JSX.Element {
    * Starts a new game
    */
   const startGame = useCallback(() => {
-    // Start game logic will be handled by GameContainer internally
-    setGameState(prev => ({ ...prev!, phase: GamePhase.PLAYING }));
+    console.log('📱 App.startGame() called');
+    // Actually start the game engine via GameContainer
+    gameContainerRef.current?.startGame();
   }, []);
 
   /**
@@ -254,7 +255,8 @@ export default function App(): JSX.Element {
       
       <View style={styles.container}>
         {/* Game Container */}
-        <GameContainer
+        <GameContainerWithRef
+          ref={gameContainerRef}
           onGameStateChange={handleGameStateChange}
           onScoreChange={handleScoreChange}
           onGameEnd={handleGameEnd}

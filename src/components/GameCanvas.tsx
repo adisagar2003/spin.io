@@ -36,11 +36,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
   height,
   cameraOffset = { x: 0, y: 0 }
 }) => {
+  // Debug logging for canvas rendering
+  console.log('🖼️ Canvas render - Dots to render:', gameState.dots?.length || 0);
+  if (gameState.dots?.length > 0) {
+    console.log('📍 First dot position:', gameState.dots[0].position, 'size:', gameState.dots[0].size);
+  }
+
   // Calculate scale to fit arena in viewport
   const scale = useMemo(() => {
     const scaleX = width / GAME_CONFIG.ARENA_WIDTH;
     const scaleY = height / GAME_CONFIG.ARENA_HEIGHT;
-    return Math.min(scaleX, scaleY, 1);
+    const calculatedScale = Math.min(scaleX, scaleY, 1);
+    console.log('📏 Canvas scale calculation:', { scaleX, scaleY, finalScale: calculatedScale });
+    return calculatedScale;
   }, [width, height]);
 
   // Calculate viewport offset to center arena
@@ -87,6 +95,42 @@ export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
           stroke={COLORS.UI_TEXT}
           strokeWidth={2}
           strokeOpacity={0.3}
+        />
+
+        {/* DEBUG: Arena corners for visibility testing */}
+        <Circle
+          cx={viewportOffset.x + 10}
+          cy={viewportOffset.y + 10}
+          r={5}
+          fill="#00FFFF"
+        />
+        <Circle
+          cx={viewportOffset.x + GAME_CONFIG.ARENA_WIDTH * scale - 10}
+          cy={viewportOffset.y + 10}
+          r={5}
+          fill="#00FFFF"
+        />
+        <Circle
+          cx={viewportOffset.x + 10}
+          cy={viewportOffset.y + GAME_CONFIG.ARENA_HEIGHT * scale - 10}
+          r={5}
+          fill="#00FFFF"
+        />
+        <Circle
+          cx={viewportOffset.x + GAME_CONFIG.ARENA_WIDTH * scale - 10}
+          cy={viewportOffset.y + GAME_CONFIG.ARENA_HEIGHT * scale - 10}
+          r={5}
+          fill="#00FFFF"
+        />
+
+        {/* DEBUG: Center point marker */}
+        <Circle
+          cx={viewportOffset.x + (GAME_CONFIG.ARENA_WIDTH * scale) / 2}
+          cy={viewportOffset.y + (GAME_CONFIG.ARENA_HEIGHT * scale) / 2}
+          r={8}
+          fill="#FFFF00"
+          stroke="#000000"
+          strokeWidth={2}
         />
 
         {/* Render dots */}
@@ -195,6 +239,18 @@ const DotComponent: React.FC<{
 }> = React.memo(({ dot, scale, worldToScreen }) => {
   const screenPos = worldToScreen(dot.position.x, dot.position.y);
   const screenSize = dot.size * scale;
+  
+  // DEBUG: Log first few dot renders
+  if (Math.random() < 0.01) { // Only log 1% to avoid spam
+    console.log('🔴 Rendering dot:', {
+      id: dot.id,
+      worldPos: dot.position,
+      screenPos,
+      worldSize: dot.size,
+      screenSize,
+      scale
+    });
+  }
   
   return (
     <G>
