@@ -126,6 +126,8 @@ export default function App(): JSX.Element {
    * Handles game end and high score processing
    */
   const handleGameEnd = useCallback(async (finalScore: number, timeElapsed: number) => {
+    console.log('💀 App.handleGameEnd() called - game over, final score:', finalScore);
+    
     const newScore: HighScore = {
       score: finalScore,
       date: new Date().toISOString(),
@@ -135,9 +137,12 @@ export default function App(): JSX.Element {
     try {
       const updatedHighScores = await addHighScore(newScore);
       setHighScores(updatedHighScores);
+      console.log('💾 High score saved, total high scores:', updatedHighScores.length);
     } catch (error) {
       console.error('Failed to save high score:', error);
     }
+    
+    // Note: UI remains hidden, game over screen will show through GameUI logic
   }, []);
 
   // Game engine ref to control game directly
@@ -158,16 +163,18 @@ export default function App(): JSX.Element {
    * Restarts the current game
    */
   const restartGame = useCallback(() => {
-    console.log('🔄 App.restartGame() called');
+    console.log('🔄 App.restartGame() called - restarting game and keeping UI hidden');
     // Use proper restart method that handles state machine flow
     gameContainerRef.current?.restartGame();
+    // Keep UI hidden for gameplay
+    // setIsUIHidden remains true
   }, []);
 
   /**
    * Returns to main menu from game over
    */
   const returnToMainMenu = useCallback(() => {
-    console.log('🏠 App.returnToMainMenu() called');
+    console.log('🏠 App.returnToMainMenu() called - showing main menu UI');
     // Reset to menu state and show UI
     gameContainerRef.current?.returnToMenu();
     setIsUIHidden(false);
