@@ -80,8 +80,8 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     }
   }, [onGameStateChange, onScoreChange, onGameEnd]);
 
-  // Game loop hook
-  const isGameActive = gameState.phase === GamePhase.PLAYING;
+  // Game loop hook - use engine state manager for consistency
+  const isGameActive = gameEngineRef.current.getStateManager().getCurrentPhase() === GamePhase.PLAYING;
   useGameLoop({
     onUpdate: handleGameUpdate,
     isActive: isGameActive,
@@ -92,11 +92,17 @@ export const GameContainer: React.FC<GameContainerProps> = ({
    * @param direction - Normalized direction vector
    */
   const handleDirectionChange = useCallback((direction: Vector2) => {
+    // Get REAL phase from engine state manager (not local state)
+    const enginePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
+    const localPhase = gameState.phase;
+    
     console.log('🎯 GameContainer received direction:', {
       direction,
       magnitude: Math.sqrt(direction.x ** 2 + direction.y ** 2).toFixed(3),
       angle: Math.atan2(direction.y, direction.x).toFixed(2),
-      gamePhase: gameState.phase
+      enginePhase: enginePhase,
+      localPhase: localPhase,
+      phasesMatch: enginePhase === localPhase
     });
     
     gameEngineRef.current.setSpinnerDirection(direction);
@@ -106,7 +112,8 @@ export const GameContainer: React.FC<GameContainerProps> = ({
    * Handles input stop
    */
   const handleInputStop = useCallback(() => {
-    console.log('🛑 GameContainer received input stop, gamePhase:', gameState.phase);
+    const enginePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
+    console.log('🛑 GameContainer received input stop, enginePhase:', enginePhase, 'localPhase:', gameState.phase);
     gameEngineRef.current.stopSpinner();
   }, [gameState.phase]);
 
