@@ -164,6 +164,16 @@ export default function App(): JSX.Element {
   }, []);
 
   /**
+   * Returns to main menu from game over
+   */
+  const returnToMainMenu = useCallback(() => {
+    console.log('🏠 App.returnToMainMenu() called');
+    // Reset to menu state and show UI
+    gameContainerRef.current?.returnToMenu();
+    setIsUIHidden(false);
+  }, []);
+
+  /**
    * Shows high scores (handled by UI state)
    */
   const showHighScores = useCallback(() => {
@@ -278,6 +288,7 @@ export default function App(): JSX.Element {
           // hasAdRemoval={settings.adRemovalPurchased}
           onStartGame={startGame}
           onRestartGame={restartGame}
+          onMainMenu={returnToMainMenu}
           onShowHighScores={showHighScores}
           // onPurchaseAdRemoval={handlePurchaseAdRemoval}
           // onRestorePurchases={handleRestorePurchases}

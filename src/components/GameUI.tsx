@@ -32,6 +32,7 @@ interface GameUIProps {
   /** Callbacks */
   onStartGame: () => void;
   onRestartGame: () => void;
+  onMainMenu: () => void;
   onShowHighScores: () => void;
   // COMMENTED OUT - WILL IMPLEMENT LATER
   // onPurchaseAdRemoval: () => void;
@@ -51,6 +52,7 @@ export const GameUI: React.FC<GameUIProps> = ({
   // hasAdRemoval,
   onStartGame,
   onRestartGame,
+  onMainMenu,
   onShowHighScores,
   // onPurchaseAdRemoval,
   // onRestorePurchases,
@@ -111,6 +113,7 @@ export const GameUI: React.FC<GameUIProps> = ({
               timeElapsed={timeElapsed}
               highScores={highScores}
               onRestartGame={onRestartGame}
+              onMainMenu={onMainMenu}
               onShowHighScores={handleShowHighScores}
             />
           )}
@@ -146,6 +149,7 @@ export const GameUI: React.FC<GameUIProps> = ({
               timeElapsed={timeElapsed}
               highScores={highScores}
               onRestartGame={onRestartGame}
+              onMainMenu={onMainMenu}
               onShowHighScores={handleShowHighScores}
             />
           )}
@@ -245,8 +249,9 @@ const GameOverScreen: React.FC<{
   timeElapsed: number;
   highScores: HighScore[];
   onRestartGame: () => void;
+  onMainMenu: () => void;
   onShowHighScores: () => void;
-}> = ({ finalScore, timeElapsed, highScores, onRestartGame, onShowHighScores }) => {
+}> = ({ finalScore, timeElapsed, highScores, onRestartGame, onMainMenu, onShowHighScores }) => {
   const isNewHighScore = highScores.length > 0 && finalScore > highScores[highScores.length - 1].score;
   
   const formatTime = (seconds: number): string => {
@@ -270,6 +275,7 @@ const GameOverScreen: React.FC<{
       
       <View style={styles.gameOverButtons}>
         <MenuButton title="PLAY AGAIN" onPress={onRestartGame} primary />
+        <MenuButton title="MAIN MENU" onPress={onMainMenu} />
         <MenuButton title="HIGH SCORES" onPress={onShowHighScores} />
       </View>
     </View>
