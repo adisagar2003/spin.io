@@ -241,8 +241,10 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
     }, []);
 
     const returnToMenu = useCallback(() => {
+      console.log('🏠 GameContainerWithRef.returnToMenu() called');
       gameEngineRef.current.resetToMenu();
       const newGameState = gameEngineRef.current.getGameState();
+      console.log('📋 After returnToMenu - new phase:', newGameState.phase);
       setGameState(newGameState);
     }, []);
 

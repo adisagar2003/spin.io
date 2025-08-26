@@ -277,7 +277,13 @@ const GameOverScreen: React.FC<{
         
         <View style={styles.gameOverButtons}>
           <MenuButton title="PLAY AGAIN" onPress={onRestartGame} primary />
-          <MenuButton title="MAIN MENU" onPress={onMainMenu} />
+          <MenuButton 
+            title="MAIN MENU" 
+            onPress={() => {
+              console.log('🏠 Main Menu button pressed in GameOverScreen');
+              onMainMenu();
+            }} 
+          />
           <MenuButton title="HIGH SCORES" onPress={onShowHighScores} />
         </View>
       </View>

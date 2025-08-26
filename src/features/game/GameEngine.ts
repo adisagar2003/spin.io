@@ -313,7 +313,9 @@ export class GameEngine {
    * Resets game to menu state
    */
   public resetToMenu(): void {
+    console.log('🔄 GameEngine.resetToMenu() called');
     this.stateManager.forceTransition(GamePhase.MENU, 'Manual reset to menu');
+    console.log('🎯 After resetToMenu - phase is now:', this.stateManager.getCurrentPhase());
   }
 
   /**
