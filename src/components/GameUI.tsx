@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Animated,
 } from 'react-native';
 import { GamePhase, HighScore, COLORS } from '../types';
 
@@ -469,6 +470,14 @@ const styles = StyleSheet.create({
     minWidth: 200,
     borderWidth: 2,
     borderColor: 'transparent',
+    elevation: 3, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
   },
   primaryButton: {
     backgroundColor: COLORS.SPINNER,
@@ -479,6 +488,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   primaryButtonText: {
     color: COLORS.BACKGROUND,
@@ -502,6 +512,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000, // Ensure it appears above canvas
+    pointerEvents: 'auto', // Enable touch events
   },
   gameOverContent: {
     backgroundColor: COLORS.UI_BUTTON,
