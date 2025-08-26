@@ -146,6 +146,8 @@ export default function App(): JSX.Element {
    */
   const startGame = useCallback(() => {
     console.log('📱 App.startGame() called');
+    // Hide the GameContainer UI
+    gameContainerRef.current?.hideUI();
     // Actually start the game engine via GameContainer
     gameContainerRef.current?.startGame();
   }, []);

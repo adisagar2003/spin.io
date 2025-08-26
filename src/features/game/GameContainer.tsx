@@ -176,6 +176,8 @@ export const useGameContainerControls = (gameContainerRef: React.RefObject<{
 export interface GameContainerRef {
   startGame: () => void;
   returnToMenu: () => void;
+  hideUI: () => void;
+  showUI: () => void;
 }
 
 // Forward ref version for external control
@@ -185,6 +187,7 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
     const [gameState, setGameState] = useState<GameState>(() => 
       gameEngineRef.current.getGameState()
     );
+    const [isUIHidden, setIsUIHidden] = useState(false);
 
     const startGame = useCallback(() => {
       gameEngineRef.current.startGame();
@@ -198,10 +201,24 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
       setGameState(newGameState);
     }, []);
 
+    const hideUI = useCallback(() => {
+      setIsUIHidden(true);
+    }, []);
+
+    const showUI = useCallback(() => {
+      setIsUIHidden(false);
+    }, []);
+
     React.useImperativeHandle(ref, () => ({
       startGame,
       returnToMenu,
+      hideUI,
+      showUI,
     }));
+
+    if (isUIHidden) {
+      return null;
+    }
 
     return <GameContainer {...props} />;
   }
