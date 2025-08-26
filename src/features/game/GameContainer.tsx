@@ -55,7 +55,7 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     const newGameState = engine.getGameState();
     
     // DEBUG: Log game state flow
-    console.log('🎯 GameContainer update - Dots in engine state:', newGameState.dots?.length || 0);
+    console.log('🎯 GameContainer update - Phase:', newGameState.phase, 'Dots:', newGameState.dots?.length || 0, 'Spinner size:', newGameState.spinner?.size.toFixed(1));
     
     setGameState(newGameState);
 

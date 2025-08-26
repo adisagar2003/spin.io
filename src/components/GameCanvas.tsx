@@ -37,9 +37,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
   cameraOffset = { x: 0, y: 0 }
 }) => {
   // Debug logging for canvas rendering
-  console.log('🖼️ Canvas render - Dots to render:', gameState.dots?.length || 0);
-  if (gameState.dots?.length > 0) {
-    console.log('📍 First dot position:', gameState.dots[0].position, 'size:', gameState.dots[0].size);
+  if (Math.random() < 0.1) { // Log 10% of renders to avoid spam
+    console.log('🖼️ Canvas render - Phase:', gameState.phase, 'Dots to render:', gameState.dots?.length || 0, 'Spinner pos:', gameState.spinner?.position);
+    if (gameState.dots?.length > 0) {
+      console.log('📍 First dot position:', gameState.dots[0].position, 'size:', gameState.dots[0].size);
+    }
   }
 
   // Calculate scale to fit arena in viewport
