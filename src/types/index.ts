@@ -137,8 +137,8 @@ export interface CollisionResult {
 /** Game configuration constants */
 export const GAME_CONFIG = {
   /** Arena dimensions */
-  ARENA_WIDTH: 1000,
-  ARENA_HEIGHT: 1000,
+  ARENA_WIDTH: 800,
+  ARENA_HEIGHT: 600,
   
   /** Spinner settings */
   SPINNER_INITIAL_SIZE: 15,
@@ -148,9 +148,9 @@ export const GAME_CONFIG = {
   SPINNER_SPIN_SPEED_INCREASE: 0.05, // 5% increase per dot
   
   /** Dot settings */
-  DOT_COUNT: 45,
-  DOT_MIN_SIZE: 20,  // Temporarily increased for debugging
-  DOT_MAX_SIZE: 30,  // Temporarily increased for debugging
+  DOT_COUNT: 25,  // Reduced for smaller arena
+  DOT_MIN_SIZE: 8,   // Restored to reasonable size
+  DOT_MAX_SIZE: 15,  // Restored to reasonable size
   DOT_GROWTH_MIN: 1,
   DOT_GROWTH_MAX: 5,
   DOT_RESPAWN_MARGIN: 50,
