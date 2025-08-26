@@ -232,6 +232,8 @@ export class GameEngine {
     
     let position: Vector2;
     let attempts = 0;
+    const maxAttempts = 50; // Increased from 10
+    const minDistance = spinner.size + 30; // Reduced from spinner.size + margin
     
     // Try to spawn away from spinner
     do {
@@ -240,10 +242,20 @@ export class GameEngine {
         randomFloat(margin, this.gameState.arena.height - margin)
       );
       attempts++;
+      
+      // Log every 10 attempts for debugging
+      if (attempts % 10 === 0) {
+        console.log(`🎯 Dot placement attempt ${attempts}: distance from spinner = ${distance(position, spinner.position).toFixed(1)}, required = ${minDistance}`);
+      }
     } while (
-      attempts < 10 && 
-      distance(position, spinner.position) < spinner.size + margin
+      attempts < maxAttempts && 
+      distance(position, spinner.position) < minDistance
     );
+
+    // Log if we couldn't find a good position
+    if (attempts >= maxAttempts) {
+      console.log('⚠️ Dot placed after max attempts, might be close to spinner');
+    }
 
     return {
       id: generateId(),
