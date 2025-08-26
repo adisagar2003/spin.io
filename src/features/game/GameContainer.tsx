@@ -238,7 +238,10 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
         engineId: 'WithRef-Engine'
       });
       setGameState(newGameState);
-    }, []);
+      
+      // IMPORTANT: Notify parent component of state change
+      props.onGameStateChange?.(newGameState);
+    }, [props]);
 
     const returnToMenu = useCallback(() => {
       console.log('🏠 GameContainerWithRef.returnToMenu() called');
@@ -246,7 +249,10 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
       const newGameState = gameEngineRef.current.getGameState();
       console.log('📋 After returnToMenu - new phase:', newGameState.phase);
       setGameState(newGameState);
-    }, []);
+      
+      // IMPORTANT: Notify parent component of state change
+      props.onGameStateChange?.(newGameState);
+    }, [props]);
 
     const restartGame = useCallback(() => {
       console.log('🔄 GameContainerWithRef.restartGame() called');
@@ -254,7 +260,10 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
       gameEngineRef.current.startGame();
       const newGameState = gameEngineRef.current.getGameState();
       setGameState(newGameState);
-    }, []);
+      
+      // IMPORTANT: Notify parent component of state change
+      props.onGameStateChange?.(newGameState);
+    }, [props]);
 
     React.useImperativeHandle(ref, () => ({
       startGame,
