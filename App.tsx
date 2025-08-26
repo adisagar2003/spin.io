@@ -42,6 +42,7 @@ export default function App(): JSX.Element {
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [settings, setSettings] = useState<GameSettings | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isUIHidden, setIsUIHidden] = useState(false);
 
   // Refs for game container control
   const gameContainerRef = useRef<GameContainerRef>(null);
@@ -146,8 +147,8 @@ export default function App(): JSX.Element {
    */
   const startGame = useCallback(() => {
     console.log('📱 App.startGame() called');
-    // Hide the GameContainer UI
-    gameContainerRef.current?.hideUI();
+    // Hide the UI
+    setIsUIHidden(true);
     // Actually start the game engine via GameContainer
     gameContainerRef.current?.startGame();
   }, []);
@@ -270,6 +271,7 @@ export default function App(): JSX.Element {
           score={gameState?.score || 0}
           timeElapsed={gameState?.timeElapsed || 0}
           highScores={highScores}
+          hidden={isUIHidden}
           // hasAdRemoval={settings.adRemovalPurchased}
           onStartGame={startGame}
           onRestartGame={restartGame}

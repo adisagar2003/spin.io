@@ -25,6 +25,8 @@ interface GameUIProps {
   timeElapsed: number;
   /** High scores array */
   highScores: HighScore[];
+  /** Whether UI should be hidden */
+  hidden?: boolean;
   /** Whether ad removal is purchased - COMMENTED OUT */
   // hasAdRemoval: boolean;
   /** Callbacks */
@@ -45,6 +47,7 @@ export const GameUI: React.FC<GameUIProps> = ({
   score,
   timeElapsed,
   highScores,
+  hidden = false,
   // hasAdRemoval,
   onStartGame,
   onRestartGame,
@@ -91,6 +94,10 @@ export const GameUI: React.FC<GameUIProps> = ({
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  if (hidden) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
