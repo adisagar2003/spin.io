@@ -119,7 +119,7 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     deadZone: 30, // Larger dead zone for easier control
   });
   
-  // Log input setup info
+  // Log input setup info and state manager status
   console.log('🎮 GameContainer input setup:', {
     canvasWidth,
     canvasHeight,
@@ -127,6 +127,18 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     gamePhase: gameState.phase,
     eventHandlersCount: Object.keys(eventHandlers).length
   });
+  
+  // DEBUG: Log state manager info if available
+  try {
+    const stateManager = gameEngineRef.current.getStateManager();
+    console.log('🔍 StateManager debug info:', {
+      currentPhase: stateManager.getCurrentPhase(),
+      allowedTransitions: stateManager.getAllowedTransitions(),
+      transitionHistory: stateManager.getTransitionHistory().slice(-3) // Last 3 transitions
+    });
+  } catch (error) {
+    console.log('⚠️ Could not access state manager for debugging');
+  }
 
   /**
    * Starts a new game
