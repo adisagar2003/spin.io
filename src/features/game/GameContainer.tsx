@@ -213,6 +213,7 @@ export const useGameContainerControls = (gameContainerRef: React.RefObject<{
 export interface GameContainerRef {
   startGame: () => void;
   returnToMenu: () => void;
+  restartGame: () => void;
 }
 
 // Forward ref version for external control
@@ -241,9 +242,18 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
       setGameState(newGameState);
     }, []);
 
+    const restartGame = useCallback(() => {
+      console.log('🔄 GameContainerWithRef.restartGame() called');
+      // Direct restart (now allowed by state machine: GAME_OVER -> PLAYING)
+      gameEngineRef.current.startGame();
+      const newGameState = gameEngineRef.current.getGameState();
+      setGameState(newGameState);
+    }, []);
+
     React.useImperativeHandle(ref, () => ({
       startGame,
       returnToMenu,
+      restartGame,
     }));
 
     return <GameContainer {...props} gameEngineRef={gameEngineRef} />;

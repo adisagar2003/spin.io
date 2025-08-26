@@ -22,7 +22,7 @@ export class GameStateManager {
   private readonly allowedTransitions: Map<GamePhase, GamePhase[]> = new Map([
     [GamePhase.MENU, [GamePhase.PLAYING]], // Menu can only go to Playing
     [GamePhase.PLAYING, [GamePhase.GAME_OVER]], // Playing can only go to Game Over
-    [GamePhase.GAME_OVER, [GamePhase.MENU]], // Game Over can only go to Menu
+    [GamePhase.GAME_OVER, [GamePhase.MENU, GamePhase.PLAYING]], // Game Over can go to Menu or Playing (restart)
   ]);
 
   constructor(initialPhase: GamePhase = GamePhase.MENU) {

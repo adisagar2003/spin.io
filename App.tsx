@@ -15,7 +15,8 @@ import {
   GameSettings, 
   COLORS 
 } from './src/types';
-import { GameContainerRef, GameEngineRef } from './src/types/game-refs';
+import { GameEngineRef } from './src/types/game-refs';
+import { GameContainerRef } from './src/features/game/GameContainer';
 import {
   loadHighScores,
   addHighScore,
@@ -157,8 +158,10 @@ export default function App(): JSX.Element {
    * Restarts the current game
    */
   const restartGame = useCallback(() => {
-    startGame();
-  }, [startGame]);
+    console.log('🔄 App.restartGame() called');
+    // Use proper restart method that handles state machine flow
+    gameContainerRef.current?.restartGame();
+  }, []);
 
   /**
    * Shows high scores (handled by UI state)
