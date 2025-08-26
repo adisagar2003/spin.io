@@ -20,6 +20,8 @@ interface GameContainerProps {
   onScoreChange?: (score: number) => void;
   /** Callback when game ends */
   onGameEnd?: (finalScore: number, timeElapsed: number) => void;
+  /** External game engine ref (optional) */
+  gameEngineRef?: React.MutableRefObject<GameEngine>;
 }
 
 /**
@@ -30,9 +32,11 @@ export const GameContainer: React.FC<GameContainerProps> = ({
   onGameStateChange,
   onScoreChange,
   onGameEnd,
+  gameEngineRef: externalEngineRef,
 }) => {
-  // Game engine instance
-  const gameEngineRef = useRef<GameEngine>(new GameEngine());
+  // Game engine instance (use external ref if provided, otherwise create new)
+  const internalEngineRef = useRef<GameEngine>(new GameEngine());
+  const gameEngineRef = externalEngineRef || internalEngineRef;
   const [gameState, setGameState] = useState<GameState>(() => 
     gameEngineRef.current.getGameState()
   );
@@ -131,7 +135,11 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     console.log('🚀 GameContainer.startGame() called');
     gameEngineRef.current.startGame();
     const newGameState = gameEngineRef.current.getGameState();
-    console.log('🎮 After startGame - Game phase:', newGameState.phase, 'Dots:', newGameState.dots?.length);
+    console.log('🎮 GameContainer engine state after start:', { 
+      phase: newGameState.phase, 
+      dots: newGameState.dots?.length,
+      engineId: 'Container-Engine' 
+    });
     setGameState(newGameState);
     previousScoreRef.current = newGameState.score;
   }, []);
@@ -204,8 +212,14 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
     );
 
     const startGame = useCallback(() => {
+      console.log('🚀 GameContainerWithRef.startGame() called');
       gameEngineRef.current.startGame();
       const newGameState = gameEngineRef.current.getGameState();
+      console.log('🎮 GameContainerWithRef engine state after start:', { 
+        phase: newGameState.phase, 
+        dots: newGameState.dots?.length,
+        engineId: 'WithRef-Engine'
+      });
       setGameState(newGameState);
     }, []);
 
@@ -220,7 +234,7 @@ export const GameContainerWithRef = React.forwardRef<GameContainerRef, GameConta
       returnToMenu,
     }));
 
-    return <GameContainer {...props} />;
+    return <GameContainer {...props} gameEngineRef={gameEngineRef} />;
   }
 );
 
