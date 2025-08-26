@@ -95,45 +95,68 @@ export const GameUI: React.FC<GameUIProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (hidden) {
+  // Allow game over screen to show even when UI is hidden
+  if (hidden && gamePhase !== GamePhase.GAME_OVER) {
     return null;
   }
 
   return (
     <View style={styles.container}>
-      {gamePhase === GamePhase.PLAYING && (
-        <GameHUD score={score} timeElapsed={timeElapsed} />
-      )}
-      
-      {/* Keyboard controls hint for web (subtle overlay) */}
-      {gamePhase === GamePhase.PLAYING && Platform.OS === 'web' && (
-        <View style={styles.keyboardHint}>
-          <Text style={styles.keyboardHintText}>WASD</Text>
-        </View>
-      )}
+      {/* When UI is hidden, only show game over screen */}
+      {hidden ? (
+        <>
+          {gamePhase === GamePhase.GAME_OVER && (
+            <GameOverScreen
+              finalScore={score}
+              timeElapsed={timeElapsed}
+              highScores={highScores}
+              onRestartGame={onRestartGame}
+              onShowHighScores={handleShowHighScores}
+            />
+          )}
+          <HighScoresModal
+            visible={showHighScores}
+            highScores={highScores}
+            onClose={() => setShowHighScores(false)}
+          />
+        </>
+      ) : (
+        <>
+          {gamePhase === GamePhase.PLAYING && (
+            <GameHUD score={score} timeElapsed={timeElapsed} />
+          )}
+          
+          {/* Keyboard controls hint for web (subtle overlay) */}
+          {gamePhase === GamePhase.PLAYING && Platform.OS === 'web' && (
+            <View style={styles.keyboardHint}>
+              <Text style={styles.keyboardHintText}>WASD</Text>
+            </View>
+          )}
 
-      {gamePhase === GamePhase.MENU && (
-        <MainMenu
-          onStartGame={onStartGame}
-          onShowHighScores={handleShowHighScores}
-        />
-      )}
+          {gamePhase === GamePhase.MENU && (
+            <MainMenu
+              onStartGame={onStartGame}
+              onShowHighScores={handleShowHighScores}
+            />
+          )}
 
-      {gamePhase === GamePhase.GAME_OVER && (
-        <GameOverScreen
-          finalScore={score}
-          timeElapsed={timeElapsed}
-          highScores={highScores}
-          onRestartGame={onRestartGame}
-          onShowHighScores={handleShowHighScores}
-        />
-      )}
+          {gamePhase === GamePhase.GAME_OVER && (
+            <GameOverScreen
+              finalScore={score}
+              timeElapsed={timeElapsed}
+              highScores={highScores}
+              onRestartGame={onRestartGame}
+              onShowHighScores={handleShowHighScores}
+            />
+          )}
 
-      <HighScoresModal
-        visible={showHighScores}
-        highScores={highScores}
-        onClose={() => setShowHighScores(false)}
-      />
+          <HighScoresModal
+            visible={showHighScores}
+            highScores={highScores}
+            onClose={() => setShowHighScores(false)}
+          />
+        </>
+      )}
     </View>
   );
 };
