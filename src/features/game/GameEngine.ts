@@ -21,12 +21,15 @@ import {
   randomFloat,
   generateId 
 } from '../../utils/math';
+import { GameStateManager } from './GameStateManager';
 
 export class GameEngine {
   private gameState: GameState;
   private lastUpdateTime: number = 0;
+  private stateManager: GameStateManager;
 
   constructor() {
+    this.stateManager = new GameStateManager(GamePhase.MENU);
     this.gameState = this.createInitialState();
   }
 
@@ -46,7 +49,7 @@ export class GameEngine {
     };
 
     return {
-      phase: GamePhase.MENU,
+      phase: this.stateManager.getCurrentPhase(),
       spinner,
       dots: [],
       score: GAME_CONFIG.SPINNER_INITIAL_SIZE,
@@ -63,15 +66,28 @@ export class GameEngine {
    * @returns Current game state
    */
   public getGameState(): Readonly<GameState> {
-    return { ...this.gameState };
+    // Ensure phase is always in sync with state manager
+    return { 
+      ...this.gameState, 
+      phase: this.stateManager.getCurrentPhase() 
+    };
   }
 
   /**
    * Starts a new game
    */
   public startGame(): void {
+    console.log('🚀 GameEngine.startGame() called');
+    
+    // Use state manager to control transition
+    const success = this.stateManager.transitionTo(GamePhase.PLAYING, 'StartGame called');
+    
+    if (!success) {
+      console.error('❌ Failed to start game - invalid state transition');
+      return;
+    }
+
     this.gameState = this.createInitialState();
-    this.gameState.phase = GamePhase.PLAYING;
     this.gameState.dots = this.generateDots();
     console.log('🎮 Game started - Generated dots:', this.gameState.dots.length);
     console.log('🎯 First few dots:', this.gameState.dots.slice(0, 3));
@@ -83,7 +99,7 @@ export class GameEngine {
    * @param deltaTime - Time elapsed since last update (seconds)
    */
   public update(deltaTime: number): void {
-    if (this.gameState.phase !== GamePhase.PLAYING) return;
+    if (this.stateManager.getCurrentPhase() !== GamePhase.PLAYING) return;
 
     this.updateSpinner(deltaTime);
     this.checkCollisions();
@@ -147,7 +163,7 @@ export class GameEngine {
       spinner.position.y - margin <= 0 ||
       spinner.position.y + margin >= this.gameState.arena.height
     ) {
-      this.gameState.phase = GamePhase.GAME_OVER;
+      this.stateManager.transitionTo(GamePhase.GAME_OVER, 'Hit arena boundary');
       return;
     }
 
@@ -278,8 +294,11 @@ export class GameEngine {
    * @param direction - Normalized direction vector
    */
   public setSpinnerDirection(direction: Vector2): void {
-    if (this.gameState.phase === GamePhase.PLAYING) {
+    if (this.stateManager.getCurrentPhase() === GamePhase.PLAYING) {
       this.gameState.spinner.targetDirection = direction;
+      console.log('🎯 GameEngine: Spinner direction set:', direction);
+    } else {
+      console.log('🚫 GameEngine: Input ignored - not in playing state:', this.stateManager.getCurrentPhase());
     }
   }
 
@@ -294,7 +313,7 @@ export class GameEngine {
    * Resets game to menu state
    */
   public resetToMenu(): void {
-    this.gameState.phase = GamePhase.MENU;
+    this.stateManager.forceTransition(GamePhase.MENU, 'Manual reset to menu');
   }
 
   /**
@@ -311,5 +330,13 @@ export class GameEngine {
    */
   public getTimeElapsed(): number {
     return this.gameState.timeElapsed;
+  }
+
+  /**
+   * Gets state manager for debugging
+   * @returns State manager instance
+   */
+  public getStateManager(): GameStateManager {
+    return this.stateManager;
   }
 }
