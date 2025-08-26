@@ -114,6 +114,17 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle player input
+  socket.on('PLAYER_INPUT', (data: { direction: { x: number; y: number } }) => {
+    const roomCode = playerRooms.get(socket.id);
+    if (!roomCode) return;
+
+    const gameRoom = rooms.get(roomCode);
+    if (!gameRoom) return;
+
+    gameRoom.handlePlayerInput(socket.id, data.direction);
+  });
+
   // Handle disconnect
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
@@ -129,6 +140,7 @@ io.on('connection', (socket) => {
         
         // Clean up empty room
         if (gameRoom.isEmpty) {
+          gameRoom.destroy();
           rooms.delete(roomCode);
           console.log(`Empty room ${roomCode} cleaned up`);
         } else {
