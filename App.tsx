@@ -8,6 +8,7 @@ import { View, StyleSheet, StatusBar, Alert } from 'react-native';
 import { GameContainerWithRef } from './src/features/game/GameContainer';
 import { GameUI } from './src/components/GameUI';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { MultiplayerApp } from './src/multiplayer/MultiplayerApp';
 import { 
   GameState, 
   GamePhase, 
@@ -34,11 +35,14 @@ import {
 } from './src/utils/purchases';
 */
 
+type GameMode = 'menu' | 'single-player' | 'multiplayer';
+
 /**
  * Main application component
  */
 export default function App(): JSX.Element {
-  // Game state
+  // App and game state
+  const [gameMode, setGameMode] = useState<GameMode>('menu');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [settings, setSettings] = useState<GameSettings | null>(null);
@@ -149,14 +153,23 @@ export default function App(): JSX.Element {
   const gameEngineRef = useRef<GameEngineRef>(null);
 
   /**
-   * Starts a new game
+   * Starts a new single-player game
    */
   const startGame = useCallback(() => {
-    console.log('📱 App.startGame() called');
-    // Hide the UI
+    console.log('📱 App.startGame() called - single player mode');
+    setGameMode('single-player');
     setIsUIHidden(true);
     // Actually start the game engine via GameContainer
     gameContainerRef.current?.startGame();
+  }, []);
+
+  /**
+   * Starts multiplayer mode
+   */
+  const startMultiplayer = useCallback(() => {
+    console.log('🌐 App.startMultiplayer() called - multiplayer mode');
+    setGameMode('multiplayer');
+    setIsUIHidden(true);
   }, []);
 
   /**
@@ -176,8 +189,11 @@ export default function App(): JSX.Element {
   const returnToMainMenu = useCallback(() => {
     console.log('🏠 App.returnToMainMenu() called - showing main menu UI');
     // Reset to menu state and show UI
-    gameContainerRef.current?.returnToMenu();
+    setGameMode('menu');
     setIsUIHidden(false);
+    if (gameContainerRef.current) {
+      gameContainerRef.current.returnToMenu();
+    }
   }, []);
 
   /**
@@ -272,34 +288,76 @@ export default function App(): JSX.Element {
     return <View style={styles.loading} />;
   }
 
+  const renderGameContent = () => {
+    switch (gameMode) {
+      case 'single-player':
+        return (
+          <>
+            {/* Single Player Game Container */}
+            <GameContainerWithRef
+              ref={gameContainerRef}
+              onGameStateChange={handleGameStateChange}
+              onScoreChange={handleScoreChange}
+              onGameEnd={handleGameEnd}
+            />
+
+            {/* Game UI Overlay for Single Player */}
+            <GameUI
+              gamePhase={gameState?.phase || GamePhase.MENU}
+              score={gameState?.score || 0}
+              timeElapsed={gameState?.timeElapsed || 0}
+              highScores={highScores}
+              hidden={isUIHidden}
+              onStartGame={startGame}
+              onStartMultiplayer={startMultiplayer}
+              onRestartGame={restartGame}
+              onMainMenu={returnToMainMenu}
+              onShowHighScores={showHighScores}
+            />
+          </>
+        );
+
+      case 'multiplayer':
+        return (
+          <MultiplayerApp onReturnToMainMenu={returnToMainMenu} />
+        );
+
+      case 'menu':
+      default:
+        return (
+          <>
+            {/* Dummy Game Container (not started) */}
+            <GameContainerWithRef
+              ref={gameContainerRef}
+              onGameStateChange={handleGameStateChange}
+              onScoreChange={handleScoreChange}
+              onGameEnd={handleGameEnd}
+            />
+
+            {/* Main Menu UI */}
+            <GameUI
+              gamePhase={GamePhase.MENU}
+              score={0}
+              timeElapsed={0}
+              highScores={highScores}
+              hidden={false}
+              onStartGame={startGame}
+              onStartMultiplayer={startMultiplayer}
+              onRestartGame={restartGame}
+              onMainMenu={returnToMainMenu}
+              onShowHighScores={showHighScores}
+            />
+          </>
+        );
+    }
+  };
+
   return (
     <ErrorBoundary>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.BACKGROUND} />
       
       <View style={styles.container}>
-        {/* Game Container */}
-        <GameContainerWithRef
-          ref={gameContainerRef}
-          onGameStateChange={handleGameStateChange}
-          onScoreChange={handleScoreChange}
-          onGameEnd={handleGameEnd}
-        />
-
-        {/* Game UI Overlay */}
-        <GameUI
-          gamePhase={gameState?.phase || GamePhase.MENU}
-          score={gameState?.score || 0}
-          timeElapsed={gameState?.timeElapsed || 0}
-          highScores={highScores}
-          hidden={isUIHidden}
-          // hasAdRemoval={settings.adRemovalPurchased}
-          onStartGame={startGame}
-          onRestartGame={restartGame}
-          onMainMenu={returnToMainMenu}
-          onShowHighScores={showHighScores}
-          // onPurchaseAdRemoval={handlePurchaseAdRemoval}
-          // onRestorePurchases={handleRestorePurchases}
-        />
+        {renderGameContent()}
       </View>
     </ErrorBoundary>
   );

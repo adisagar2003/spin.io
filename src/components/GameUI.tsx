@@ -32,6 +32,7 @@ interface GameUIProps {
   // hasAdRemoval: boolean;
   /** Callbacks */
   onStartGame: () => void;
+  onStartMultiplayer: () => void;
   onRestartGame: () => void;
   onMainMenu: () => void;
   onShowHighScores: () => void;
@@ -52,6 +53,7 @@ export const GameUI: React.FC<GameUIProps> = ({
   hidden = false,
   // hasAdRemoval,
   onStartGame,
+  onStartMultiplayer,
   onRestartGame,
   onMainMenu,
   onShowHighScores,
@@ -209,7 +211,8 @@ const MainMenu: React.FC<{
     <Text style={styles.subtitle}>Fidget Spinner Chaos</Text>
     
     <View style={styles.menuButtons}>
-      <MenuButton title="START GAME" onPress={onStartGame} primary />
+      <MenuButton title="SINGLE PLAYER" onPress={onStartGame} primary />
+      <MenuButton title="MULTIPLAYER" onPress={onStartMultiplayer} />
       <MenuButton title="HIGH SCORES" onPress={onShowHighScores} />
       
       {/* COMMENTED OUT - WILL IMPLEMENT LATER */}

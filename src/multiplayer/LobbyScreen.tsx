@@ -9,11 +9,13 @@ import { NetworkManager, MultiplayerPlayerData, RoomState } from './NetworkManag
 interface LobbyScreenProps {
   networkManager: NetworkManager;
   onGameStarted: () => void;
+  onBackToMainMenu?: () => void;
 }
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({ 
   networkManager, 
-  onGameStarted 
+  onGameStarted,
+  onBackToMainMenu 
 }) => {
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
@@ -208,6 +210,15 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           {isConnecting ? 'JOINING...' : 'JOIN ROOM'}
         </Text>
       </TouchableOpacity>
+
+      {onBackToMainMenu && (
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={onBackToMainMenu}
+        >
+          <Text style={styles.buttonText}>BACK TO MAIN MENU</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -262,6 +273,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 50,
     backgroundColor: '#FF0000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+    marginTop: 20,
+  },
+  backButton: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#666',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 5,

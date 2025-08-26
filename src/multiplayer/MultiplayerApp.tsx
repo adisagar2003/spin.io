@@ -10,7 +10,13 @@ import { MultiplayerGameContainer } from './MultiplayerGameContainer';
 
 type AppState = 'connecting' | 'lobby' | 'playing' | 'game_over';
 
-export const MultiplayerApp: React.FC = () => {
+interface MultiplayerAppProps {
+  onReturnToMainMenu?: () => void;
+}
+
+export const MultiplayerApp: React.FC<MultiplayerAppProps> = ({ 
+  onReturnToMainMenu 
+}) => {
   const [appState, setAppState] = useState<AppState>('connecting');
   const [winner, setWinner] = useState<MultiplayerPlayerData | null>(null);
   const networkManager = useRef(new NetworkManager());
@@ -28,7 +34,10 @@ export const MultiplayerApp: React.FC = () => {
         Alert.alert(
           'Connection Failed',
           'Could not connect to the multiplayer server. Please check if the server is running.',
-          [{ text: 'Retry', onPress: connectToServer }]
+          [
+            { text: 'Back to Menu', onPress: () => onReturnToMainMenu?.() },
+            { text: 'Retry', onPress: connectToServer }
+          ]
         );
       }
     };
@@ -58,6 +67,12 @@ export const MultiplayerApp: React.FC = () => {
     setAppState('lobby');
   };
 
+  const handleBackToMainMenu = () => {
+    console.log('🏠 Returning to main menu');
+    networkManager.current.disconnect();
+    onReturnToMainMenu?.();
+  };
+
   const renderCurrentScreen = () => {
     switch (appState) {
       case 'connecting':
@@ -72,6 +87,7 @@ export const MultiplayerApp: React.FC = () => {
           <LobbyScreen
             networkManager={networkManager.current}
             onGameStarted={handleGameStarted}
+            onBackToMainMenu={handleBackToMainMenu}
           />
         );
 
