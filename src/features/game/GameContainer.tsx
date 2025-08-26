@@ -21,7 +21,13 @@ interface GameContainerProps {
   /** Callback when game ends */
   onGameEnd?: (finalScore: number, timeElapsed: number) => void;
   /** External game engine ref (optional) */
-  gameEngineRef?: React.MutableRefObject<GameEngine>;
+  gameEngineRef?: React.MutableRefObject<GameEngine | null>;
+  /** Callback for input updates (for multiplayer) */
+  onInputUpdate?: (direction: Vector2) => void;
+  /** Callback when game engine is ready (for multiplayer) */
+  onGameEngineReady?: (engine: GameEngine) => void;
+  /** Is this a multiplayer game */
+  isMultiplayer?: boolean;
 }
 
 /**
@@ -33,13 +39,24 @@ export const GameContainer: React.FC<GameContainerProps> = ({
   onScoreChange,
   onGameEnd,
   gameEngineRef: externalEngineRef,
+  onInputUpdate,
+  onGameEngineReady,
+  isMultiplayer = false,
 }) => {
   // Game engine instance (use external ref if provided, otherwise create new)
   const internalEngineRef = useRef<GameEngine>(new GameEngine());
   const gameEngineRef = externalEngineRef || internalEngineRef;
+
   const [gameState, setGameState] = useState<GameState>(() => 
-    gameEngineRef.current.getGameState()
+    gameEngineRef.current!.getGameState()
   );
+
+  // Notify when engine is ready (for multiplayer)
+  React.useEffect(() => {
+    if (onGameEngineReady && gameEngineRef.current) {
+      onGameEngineReady(gameEngineRef.current);
+    }
+  }, [onGameEngineReady]);
 
   // Previous score for change detection
   const previousScoreRef = useRef<number>(gameState.score);
@@ -98,11 +115,18 @@ export const GameContainer: React.FC<GameContainerProps> = ({
       direction,
       magnitude: Math.sqrt(direction.x ** 2 + direction.y ** 2).toFixed(3),
       angle: Math.atan2(direction.y, direction.x).toFixed(2),
-      gamePhase
+      gamePhase,
+      isMultiplayer
     });
     
-    gameEngineRef.current.setSpinnerDirection(direction);
-  }, []);
+    // For multiplayer, send input to network manager
+    if (isMultiplayer && onInputUpdate) {
+      onInputUpdate(direction);
+    } else {
+      // For single player, directly update local engine
+      gameEngineRef.current.setSpinnerDirection(direction);
+    }
+  }, [isMultiplayer, onInputUpdate]);
 
   /**
    * Handles input stop

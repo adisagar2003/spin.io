@@ -354,4 +354,20 @@ export class GameEngine {
       transitionHistory: this.stateManager.getTransitionHistory().slice(-3)
     });
   }
+
+  /**
+   * Sets game state (for multiplayer synchronization)
+   * @param newState - New game state from server
+   */
+  public setGameState(newState: GameState): void {
+    // Update local state with server-authoritative state
+    this.gameState = { ...newState };
+    
+    // Sync phase with state manager if needed
+    if (this.stateManager.getCurrentPhase() !== newState.phase) {
+      this.stateManager.forceTransition(newState.phase, 'Server state sync');
+    }
+    
+    console.log('🌐 GameEngine: State synced from server');
+  }
 }
