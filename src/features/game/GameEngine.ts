@@ -339,4 +339,17 @@ export class GameEngine {
   public getStateManager(): GameStateManager {
     return this.stateManager;
   }
+
+  /**
+   * Logs current state information for debugging
+   */
+  public logStateInfo(): void {
+    console.log('🔍 GameEngine State Info:', {
+      enginePhase: this.gameState.phase,
+      managerPhase: this.stateManager.getCurrentPhase(),
+      phasesMatch: this.gameState.phase === this.stateManager.getCurrentPhase(),
+      allowedTransitions: this.stateManager.getAllowedTransitions(),
+      transitionHistory: this.stateManager.getTransitionHistory().slice(-3)
+    });
+  }
 }
