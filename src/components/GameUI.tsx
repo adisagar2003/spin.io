@@ -262,21 +262,23 @@ const GameOverScreen: React.FC<{
 
   return (
     <View style={styles.gameOver}>
-      <Text style={styles.gameOverTitle}>GAME OVER</Text>
-      
-      {isNewHighScore && (
-        <Text style={styles.newHighScore}>🎉 NEW HIGH SCORE! 🎉</Text>
-      )}
-      
-      <View style={styles.finalStats}>
-        <Text style={styles.finalScore}>Final Size: {Math.floor(finalScore)}</Text>
-        <Text style={styles.finalTime}>Time: {formatTime(timeElapsed)}</Text>
-      </View>
-      
-      <View style={styles.gameOverButtons}>
-        <MenuButton title="PLAY AGAIN" onPress={onRestartGame} primary />
-        <MenuButton title="MAIN MENU" onPress={onMainMenu} />
-        <MenuButton title="HIGH SCORES" onPress={onShowHighScores} />
+      <View style={styles.gameOverContent}>
+        <Text style={styles.gameOverTitle}>GAME OVER</Text>
+        
+        {isNewHighScore && (
+          <Text style={styles.newHighScore}>🎉 NEW HIGH SCORE! 🎉</Text>
+        )}
+        
+        <View style={styles.finalStats}>
+          <Text style={styles.finalScore}>Final Size: {Math.floor(finalScore)}</Text>
+          <Text style={styles.finalTime}>Time: {formatTime(timeElapsed)}</Text>
+        </View>
+        
+        <View style={styles.gameOverButtons}>
+          <MenuButton title="PLAY AGAIN" onPress={onRestartGame} primary />
+          <MenuButton title="MAIN MENU" onPress={onMainMenu} />
+          <MenuButton title="HIGH SCORES" onPress={onShowHighScores} />
+        </View>
       </View>
     </View>
   );
@@ -495,10 +497,27 @@ const styles = StyleSheet.create({
   
   // Game Over Styles
   gameOver: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)', // Semi-transparent overlay
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000, // Ensure it appears above canvas
+  },
+  gameOverContent: {
+    backgroundColor: COLORS.UI_BUTTON,
+    borderRadius: 20,
     paddingHorizontal: 40,
+    paddingVertical: 30,
+    maxWidth: '90%',
+    alignItems: 'center',
+    elevation: 10, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
   },
   gameOverTitle: {
     fontSize: 36,
@@ -532,6 +551,7 @@ const styles = StyleSheet.create({
   gameOverButtons: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 10,
   },
   
   // Modal Styles
