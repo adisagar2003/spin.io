@@ -141,8 +141,8 @@ export const GAME_CONFIG = {
   ARENA_HEIGHT: 600,
   
   /** Spinner settings */
-  SPINNER_INITIAL_SIZE: 15,
-  SPINNER_MAX_SIZE: 100,
+  SPINNER_INITIAL_SIZE: 25,  // Increased for better visibility
+  SPINNER_MAX_SIZE: 120,
   SPINNER_INITIAL_SPEED: 200,
   SPINNER_INITIAL_SPIN_SPEED: Math.PI * 2, // 1 rotation per second
   SPINNER_SPIN_SPEED_INCREASE: 0.05, // 5% increase per dot

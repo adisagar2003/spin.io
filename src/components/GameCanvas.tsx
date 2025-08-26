@@ -167,6 +167,18 @@ const SpinnerComponent: React.FC<{
   const screenPos = worldToScreen(spinner.position.x, spinner.position.y);
   const screenSize = spinner.size * scale;
   
+  // DEBUG: Log spinner rendering details
+  if (Math.random() < 0.1) { // Log 10% of renders to avoid spam
+    console.log('🌀 Rendering spinner:', {
+      worldPos: spinner.position,
+      screenPos,
+      worldSize: spinner.size,
+      screenSize,
+      scale,
+      rotation: spinner.rotation.toFixed(2)
+    });
+  }
+  
   // Create fidget spinner shape (tri-lobed)
   const spinnerPoints = useMemo(() => {
     const centerX = screenPos.x;
