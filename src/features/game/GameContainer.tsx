@@ -92,30 +92,26 @@ export const GameContainer: React.FC<GameContainerProps> = ({
    * @param direction - Normalized direction vector
    */
   const handleDirectionChange = useCallback((direction: Vector2) => {
-    // Get REAL phase from engine state manager (not local state)
-    const enginePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
-    const localPhase = gameState.phase;
+    const gamePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
     
     console.log('🎯 GameContainer received direction:', {
       direction,
       magnitude: Math.sqrt(direction.x ** 2 + direction.y ** 2).toFixed(3),
       angle: Math.atan2(direction.y, direction.x).toFixed(2),
-      enginePhase: enginePhase,
-      localPhase: localPhase,
-      phasesMatch: enginePhase === localPhase
+      gamePhase
     });
     
     gameEngineRef.current.setSpinnerDirection(direction);
-  }, [gameState.phase]);
+  }, []);
 
   /**
    * Handles input stop
    */
   const handleInputStop = useCallback(() => {
-    const enginePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
-    console.log('🛑 GameContainer received input stop, enginePhase:', enginePhase, 'localPhase:', gameState.phase);
+    const gamePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
+    console.log('🛑 GameContainer received input stop, gamePhase:', gamePhase);
     gameEngineRef.current.stopSpinner();
-  }, [gameState.phase]);
+  }, []);
 
   // Input handler hook
   const { eventHandlers } = useInputHandler({
@@ -127,11 +123,12 @@ export const GameContainer: React.FC<GameContainerProps> = ({
   });
   
   // Log input setup info and state manager status
+  const currentGamePhase = gameEngineRef.current.getStateManager().getCurrentPhase();
   console.log('🎮 GameContainer input setup:', {
     canvasWidth,
     canvasHeight,
     deadZone: 30,
-    gamePhase: gameState.phase,
+    gamePhase: currentGamePhase,
     eventHandlersCount: Object.keys(eventHandlers).length
   });
   
