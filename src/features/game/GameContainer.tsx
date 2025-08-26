@@ -88,15 +88,23 @@ export const GameContainer: React.FC<GameContainerProps> = ({
    * @param direction - Normalized direction vector
    */
   const handleDirectionChange = useCallback((direction: Vector2) => {
+    console.log('🎯 GameContainer received direction:', {
+      direction,
+      magnitude: Math.sqrt(direction.x ** 2 + direction.y ** 2).toFixed(3),
+      angle: Math.atan2(direction.y, direction.x).toFixed(2),
+      gamePhase: gameState.phase
+    });
+    
     gameEngineRef.current.setSpinnerDirection(direction);
-  }, []);
+  }, [gameState.phase]);
 
   /**
    * Handles input stop
    */
   const handleInputStop = useCallback(() => {
+    console.log('🛑 GameContainer received input stop, gamePhase:', gameState.phase);
     gameEngineRef.current.stopSpinner();
-  }, []);
+  }, [gameState.phase]);
 
   // Input handler hook
   const { eventHandlers } = useInputHandler({
@@ -105,6 +113,15 @@ export const GameContainer: React.FC<GameContainerProps> = ({
     onDirectionChange: handleDirectionChange,
     onInputStop: handleInputStop,
     deadZone: 30, // Larger dead zone for easier control
+  });
+  
+  // Log input setup info
+  console.log('🎮 GameContainer input setup:', {
+    canvasWidth,
+    canvasHeight,
+    deadZone: 30,
+    gamePhase: gameState.phase,
+    eventHandlersCount: Object.keys(eventHandlers).length
   });
 
   /**
