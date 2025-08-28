@@ -181,11 +181,14 @@ export class GameRoom {
     const spawnPositions = this.generateSafeSpawnPositions(this.room.gameState.players.size);
     let spawnIndex = 0;
     
+    console.log(`🎯 START_GAME: Spawning ${this.room.gameState.players.size} players with positions:`, 
+      spawnPositions.map((pos, i) => `Player ${i+1}: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)})`));
+    
     for (const player of this.room.gameState.players.values()) {
       player.isAlive = true;
       player.score = GAME_CONFIG.SPINNER_INITIAL_SIZE;
       
-      const spawnPosition = spawnPositions[spawnIndex++];
+      const spawnPosition = spawnPositions[spawnIndex];
       
       player.spinner.position = spawnPosition;
       player.spinner.velocity = createVector2(0, 0);
@@ -193,10 +196,28 @@ export class GameRoom {
       player.spinner.size = GAME_CONFIG.SPINNER_INITIAL_SIZE;
       player.spinner.maxSpeed = GAME_CONFIG.SPINNER_INITIAL_SPEED;
       
-      console.log(`🎮 Respawned player ${player.name} at:`, { 
+      console.log(`🎮 Player ${player.name} (${player.id}) spawned at:`, { 
+        index: spawnIndex,
         x: spawnPosition.x.toFixed(1), 
-        y: spawnPosition.y.toFixed(1) 
+        y: spawnPosition.y.toFixed(1),
+        size: player.spinner.size,
+        initialSize: GAME_CONFIG.SPINNER_INITIAL_SIZE
       });
+      
+      spawnIndex++;
+    }
+    
+    // Verify distances between all players
+    const players = Array.from(this.room.gameState.players.values());
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        const dist = Math.sqrt(
+          Math.pow(players[i].spinner.position.x - players[j].spinner.position.x, 2) +
+          Math.pow(players[i].spinner.position.y - players[j].spinner.position.y, 2)
+        );
+        const minRequired = GAME_CONFIG.SPINNER_INITIAL_SIZE * 4;
+        console.log(`📏 Distance between ${players[i].name} and ${players[j].name}: ${dist.toFixed(1)} (min required: ${minRequired})`);
+      }
     }
 
     console.log(`Game started in room ${this.room.code} by host ${playerId}`);
@@ -347,7 +368,15 @@ export class GameRoom {
     if (!this.room.isPlaying) return;
     
     const player = this.room.gameState.players.get(playerId);
-    if (!player || !player.isAlive) return;
+    if (!player || !player.isAlive) {
+      console.log(`⚠️ handlePlayerInput ignored: player=${playerId}, exists=${!!player}, alive=${player?.isAlive}`);
+      return;
+    }
+    
+    console.log(`🎮 Input received from ${player.name} (${playerId}):`, {
+      direction: { x: direction.x.toFixed(2), y: direction.y.toFixed(2) },
+      currentPos: { x: player.spinner.position.x.toFixed(1), y: player.spinner.position.y.toFixed(1) }
+    });
     
     player.spinner.targetDirection = direction;
   }
@@ -515,6 +544,8 @@ export class GameRoom {
   private checkPlayerCollisions(): void {
     const alivePlayers = Array.from(this.room.gameState.players.values()).filter(p => p.isAlive);
     
+    if (alivePlayers.length < 2) return; // Need at least 2 players
+    
     // Check all pairs of players
     for (let i = 0; i < alivePlayers.length; i++) {
       for (let j = i + 1; j < alivePlayers.length; j++) {
@@ -531,7 +562,28 @@ export class GameRoom {
           player2.spinner.size / 2
         );
         
+        // DEBUG: Log collision details
         if (collision.hasCollision) {
+          console.log(`🔍 COLLISION DETECTED:`, {
+            player1: { 
+              name: player1.name, 
+              id: player1.id,
+              pos: { x: player1.spinner.position.x.toFixed(1), y: player1.spinner.position.y.toFixed(1) },
+              size: player1.spinner.size.toFixed(1),
+              radius: (player1.spinner.size / 2).toFixed(1)
+            },
+            player2: { 
+              name: player2.name, 
+              id: player2.id,
+              pos: { x: player2.spinner.position.x.toFixed(1), y: player2.spinner.position.y.toFixed(1) },
+              size: player2.spinner.size.toFixed(1),
+              radius: (player2.spinner.size / 2).toFixed(1)
+            },
+            distance: collision.distance.toFixed(1),
+            totalRadius: ((player1.spinner.size + player2.spinner.size) / 2).toFixed(1),
+            shouldCollide: collision.distance < ((player1.spinner.size + player2.spinner.size) / 2)
+          });
+          
           this.handlePlayerCollision(player1, player2);
         }
       }
