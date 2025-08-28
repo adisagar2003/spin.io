@@ -4,12 +4,13 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { GameContainer } from '../features/game/GameContainer';
+import { GameContainerWithRef } from '../features/game/GameContainer';
 import { GameEngine } from '../features/game/GameEngine';
-import { NetworkManager, MultiplayerGameState, MultiplayerPlayerData } from './NetworkManager';
-import { Vector2, GameState, Spinner, Dot, GamePhase } from '../types';
+import { NetworkManager, MultiplayerGameState as NetworkMultiplayerGameState, MultiplayerPlayerData } from './NetworkManager';
+import { Vector2, GameState, Spinner, Dot, GamePhase, MultiplayerGameState, MultiplayerPlayer } from '../types';
 import { createVector2 } from '../utils/math';
-import { GameContainerRef } from '../types/game-refs';
+import { GameContainerRef } from '../features/game/GameContainer';
+import { playerStateManager } from './PlayerStateManager';
 
 interface MultiplayerGameContainerProps {
   networkManager: NetworkManager;
@@ -23,34 +24,40 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
   onReturnToLobby
 }) => {
   const gameContainerRef = useRef<GameContainerRef>(null);
-  const gameEngineRef = useRef<GameEngine | null>(null);
-  const currentPlayerIdRef = useRef<string>('');
+  const gameEngineRef = useRef<GameEngine>(new GameEngine());
 
-  // Convert multiplayer state to local game state format
+  // Convert multiplayer state to local game state format with all players
   const convertToLocalGameState = useCallback((
-    multiplayerState: MultiplayerGameState,
+    networkState: NetworkMultiplayerGameState,
     currentPlayerId: string
-  ): GameState => {
+  ): MultiplayerGameState => {
     // Find current player
-    const currentPlayer = multiplayerState.players.find(p => p.id === currentPlayerId);
+    const currentPlayer = networkState.players.find(p => p.id === currentPlayerId);
     
     if (!currentPlayer) {
       throw new Error('Current player not found in multiplayer state');
     }
 
-    // Convert spinner format
-    const spinner: Spinner = {
-      position: currentPlayer.spinner.position,
-      velocity: currentPlayer.spinner.velocity,
-      targetDirection: currentPlayer.spinner.targetDirection,
-      size: currentPlayer.spinner.size,
-      spinSpeed: currentPlayer.spinner.spinSpeed,
-      rotation: currentPlayer.spinner.rotation,
-      maxSpeed: currentPlayer.spinner.maxSpeed
-    };
+    // Convert all players to local format
+    const players: MultiplayerPlayer[] = networkState.players.map(player => ({
+      id: player.id,
+      name: player.name,
+      spinner: {
+        position: player.spinner.position,
+        velocity: player.spinner.velocity,
+        targetDirection: player.spinner.targetDirection,
+        size: player.spinner.size,
+        spinSpeed: player.spinner.spinSpeed,
+        rotation: player.spinner.rotation,
+        maxSpeed: player.spinner.maxSpeed
+      },
+      score: player.score,
+      isAlive: player.isAlive,
+      isCurrentPlayer: player.id === currentPlayerId
+    }));
 
     // Convert dots format
-    const dots: Dot[] = multiplayerState.dots.map(dot => ({
+    const dots: Dot[] = networkState.dots.map(dot => ({
       id: dot.id,
       position: dot.position,
       size: dot.size,
@@ -59,10 +66,10 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
 
     return {
       phase: GamePhase.PLAYING,
-      spinner,
+      players,
       dots,
       score: currentPlayer.score,
-      timeElapsed: multiplayerState.timeElapsed,
+      timeElapsed: networkState.timeElapsed,
       arena: {
         width: 800,
         height: 600
@@ -72,19 +79,38 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
 
   // Handle multiplayer game state updates
   useEffect(() => {
-    const handleGameState = (data: MultiplayerGameState) => {
-      if (!gameEngineRef.current || !currentPlayerIdRef.current) return;
+    const handleGameState = (data: NetworkMultiplayerGameState) => {
+      const currentPlayerId = playerStateManager.getPlayerId();
+      console.log('📡 Received game state:', {
+        hasGameEngine: !!gameEngineRef.current,
+        currentPlayerId: currentPlayerId,
+        playersCount: data.players.length,
+        dotsCount: data.dots.length,
+        timeElapsed: data.timeElapsed
+      });
+
+      if (!gameEngineRef.current) {
+        console.warn('⚠️ Game engine not ready, skipping game state update');
+        return;
+      }
+
+      if (!currentPlayerId) {
+        console.warn('⚠️ Current player ID not set, skipping game state update');
+        return;
+      }
 
       try {
         // Convert to local format and update engine
-        const localState = convertToLocalGameState(data, currentPlayerIdRef.current);
+        const localState = convertToLocalGameState(data, currentPlayerId);
         
         // Update the local game engine with server state
         // This overrides client prediction with authoritative server state
         gameEngineRef.current.setGameState(localState);
         
+        console.log('✅ Game state updated successfully');
+        
       } catch (error) {
-        console.error('Error updating game state:', error);
+        console.error('❌ Error updating game state:', error);
       }
     };
 
@@ -94,7 +120,12 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
     };
 
     const handleGameOver = (data: { winner: MultiplayerPlayerData | null }) => {
-      console.log('Game over, winner:', data.winner?.name || 'None');
+      const currentPlayerId = playerStateManager.getPlayerId();
+      console.log('🏆 Game over received:', {
+        winner: data.winner ? { id: data.winner.id, name: data.winner.name } : null,
+        currentPlayerId: currentPlayerId,
+        isCurrentPlayerWinner: data.winner?.id === currentPlayerId
+      });
       onGameOver(data.winner);
     };
 
@@ -105,27 +136,46 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
 
     // Store current player ID when we receive it
     const handleRoomJoined = (data: { playerId: string }) => {
-      currentPlayerIdRef.current = data.playerId;
+      playerStateManager.setPlayerId(data.playerId);
     };
 
     const handleRoomCreated = (data: { playerId: string }) => {
-      currentPlayerIdRef.current = data.playerId;
+      playerStateManager.setPlayerId(data.playerId);
+    };
+
+    const handleConnected = (data: { message: string; playerId: string }) => {
+      console.log('🎯 MultiplayerGameContainer received connected event:', data);
+      playerStateManager.setPlayerId(data.playerId);
+      console.log('🆔 Player ID set in MultiplayerGameContainer:', data.playerId);
+    };
+
+    const handleGameStarted = () => {
+      console.log('🎮 Game started event received in MultiplayerGameContainer');
+      // Ensure game engine is in playing state
+      if (gameEngineRef.current) {
+        gameEngineRef.current.startGame();
+        console.log('🎮 Game engine started');
+      }
     };
 
     networkManager.on('GAME_STATE', handleGameState);
+    networkManager.on('GAME_STARTED', handleGameStarted);
     networkManager.on('PLAYER_ELIMINATED', handlePlayerEliminated);
     networkManager.on('GAME_OVER', handleGameOver);
     networkManager.on('disconnected', handleDisconnected);
     networkManager.on('ROOM_JOINED', handleRoomJoined);
     networkManager.on('ROOM_CREATED', handleRoomCreated);
+    networkManager.on('connected', handleConnected);
 
     return () => {
       networkManager.off('GAME_STATE', handleGameState);
+      networkManager.off('GAME_STARTED', handleGameStarted);
       networkManager.off('PLAYER_ELIMINATED', handlePlayerEliminated);
       networkManager.off('GAME_OVER', handleGameOver);
       networkManager.off('disconnected', handleDisconnected);
       networkManager.off('ROOM_JOINED', handleRoomJoined);
       networkManager.off('ROOM_CREATED', handleRoomCreated);
+      networkManager.off('connected', handleConnected);
     };
   }, [networkManager, convertToLocalGameState, onGameOver, onReturnToLobby]);
 
@@ -142,14 +192,14 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
 
   const handleGameEngineReady = useCallback((engine: GameEngine) => {
     gameEngineRef.current = engine;
-    console.log('Multiplayer game engine ready');
+    console.log('🎮 Multiplayer game engine ready');
   }, []);
 
   return (
     <View style={styles.container}>
-      <GameContainer
+      <GameContainerWithRef
         ref={gameContainerRef}
-        gameEngineRef={{ current: null }} // We manage the engine ourselves
+        gameEngineRef={gameEngineRef}
         onGameStateChange={() => {}} // Server manages state changes
         onInputUpdate={handleInput}
         onGameEngineReady={handleGameEngineReady}

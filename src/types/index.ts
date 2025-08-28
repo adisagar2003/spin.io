@@ -172,4 +172,22 @@ export const COLORS = {
   UI_TEXT: '#FFFFFF',
   UI_BUTTON: '#333333',
   UI_BUTTON_TEXT: '#FFFFFF',
-} as const
+} as const;
+
+/** Multiplayer player representation */
+export interface MultiplayerPlayer {
+  id: string;
+  name: string;
+  spinner: Spinner;
+  score: number;
+  isAlive: boolean;
+  isCurrentPlayer: boolean;
+}
+
+/** Extended game state for multiplayer mode */
+export interface MultiplayerGameState extends Omit<GameState, 'spinner' | 'score'> {
+  /** All players in the game */
+  players: MultiplayerPlayer[];
+  /** Current player's score */
+  score: number;
+}

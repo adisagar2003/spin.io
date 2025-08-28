@@ -10,15 +10,16 @@ import Svg, {
   Polygon, 
   Rect, 
   G,
+  Text,
   Defs,
   RadialGradient,
   Stop 
 } from 'react-native-svg';
-import { GameState, Spinner, Dot, COLORS, GAME_CONFIG } from '../types';
+import { GameState, MultiplayerGameState, Spinner, Dot, COLORS, GAME_CONFIG } from '../types';
 
 interface GameCanvasProps {
-  /** Current game state */
-  gameState: GameState;
+  /** Current game state (single or multiplayer) */
+  gameState: GameState | MultiplayerGameState;
   /** Canvas dimensions */
   width: number;
   height: number;
@@ -30,17 +31,25 @@ interface GameCanvasProps {
  * Main game canvas component
  * Renders all game objects including spinner, dots, and arena
  */
+// Type guard to check if gameState is multiplayer
+const isMultiplayerGameState = (state: GameState | MultiplayerGameState): state is MultiplayerGameState => {
+  return 'players' in state;
+};
+
 export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
   gameState,
   width,
   height,
   cameraOffset = { x: 0, y: 0 }
 }) => {
+  const isMultiplayer = isMultiplayerGameState(gameState);
+  
   // Debug logging for canvas rendering
   if (Math.random() < 0.1) { // Log 10% of renders to avoid spam
-    console.log('🖼️ Canvas render - Phase:', gameState.phase, 'Dots to render:', gameState.dots?.length || 0, 'Spinner pos:', gameState.spinner?.position);
-    if (gameState.dots?.length > 0) {
-      console.log('📍 First dot position:', gameState.dots[0].position, 'size:', gameState.dots[0].size);
+    if (isMultiplayer) {
+      console.log('🖼️ Canvas render (MP) - Phase:', gameState.phase, 'Dots:', gameState.dots?.length || 0, 'Players:', gameState.players?.length || 0);
+    } else {
+      console.log('🖼️ Canvas render (SP) - Phase:', gameState.phase, 'Dots:', gameState.dots?.length || 0, 'Spinner pos:', gameState.spinner?.position);
     }
   }
 
@@ -110,12 +119,31 @@ export const GameCanvas: React.FC<GameCanvasProps> = React.memo(({
           />
         ))}
 
-        {/* Render spinner */}
-        <SpinnerComponent
-          spinner={gameState.spinner}
-          scale={scale}
-          worldToScreen={worldToScreen}
-        />
+        {/* Render spinner(s) */}
+        {isMultiplayer ? (
+          // Multiplayer: render all players' spinners
+          gameState.players.map((player) => (
+            <SpinnerComponent
+              key={player.id}
+              spinner={player.spinner}
+              scale={scale}
+              worldToScreen={worldToScreen}
+              isCurrentPlayer={player.isCurrentPlayer}
+              playerName={player.name}
+              isAlive={player.isAlive}
+            />
+          ))
+        ) : (
+          // Single player: render only the main spinner
+          <SpinnerComponent
+            spinner={gameState.spinner}
+            scale={scale}
+            worldToScreen={worldToScreen}
+            isCurrentPlayer={true}
+            playerName=""
+            isAlive={true}
+          />
+        )}
       </Svg>
     </View>
   );
@@ -130,7 +158,10 @@ const SpinnerComponent: React.FC<{
   spinner: Spinner;
   scale: number;
   worldToScreen: (x: number, y: number) => { x: number; y: number };
-}> = React.memo(({ spinner, scale, worldToScreen }) => {
+  isCurrentPlayer: boolean;
+  playerName: string;
+  isAlive: boolean;
+}> = React.memo(({ spinner, scale, worldToScreen, isCurrentPlayer, playerName, isAlive }) => {
   const screenPos = worldToScreen(spinner.position.x, spinner.position.y);
   const screenSize = spinner.size * scale;
   
@@ -145,6 +176,10 @@ const SpinnerComponent: React.FC<{
       rotation: spinner.rotation.toFixed(2)
     });
   }
+  
+  // Determine colors based on player type
+  const spinnerColor = isCurrentPlayer ? COLORS.SPINNER : (isAlive ? '#00AAFF' : '#666666'); // Current = green, others = blue, dead = gray
+  const opacity = isAlive ? 1 : 0.5;
   
   // Create fidget spinner shape (tri-lobed)
   const spinnerPoints = useMemo(() => {
@@ -168,15 +203,16 @@ const SpinnerComponent: React.FC<{
   }, [screenPos.x, screenPos.y, screenSize, spinner.rotation]);
 
   return (
-    <G>
+    <G opacity={opacity}>
       {/* Main body */}
       <Circle
         cx={screenPos.x}
         cy={screenPos.y}
         r={screenSize * 0.4}
-        fill="url(#spinnerGradient)"
-        stroke={COLORS.SPINNER}
+        fill={spinnerColor}
+        stroke={spinnerColor}
         strokeWidth={2}
+        opacity={0.8}
       />
       
       {/* Three spinner lobes */}
@@ -186,10 +222,10 @@ const SpinnerComponent: React.FC<{
           cx={lobe.x}
           cy={lobe.y}
           r={screenSize * 0.35}
-          fill="url(#spinnerGradient)"
-          stroke={COLORS.SPINNER}
+          fill={spinnerColor}
+          stroke={spinnerColor}
           strokeWidth={1}
-          opacity={0.8}
+          opacity={0.6}
         />
       ))}
       
@@ -199,9 +235,23 @@ const SpinnerComponent: React.FC<{
         cy={screenPos.y}
         r={screenSize * 0.15}
         fill={COLORS.BACKGROUND}
-        stroke={COLORS.SPINNER}
+        stroke={spinnerColor}
         strokeWidth={2}
       />
+      
+      {/* Player name label (for multiplayer) */}
+      {playerName && (
+        <Text
+          x={screenPos.x}
+          y={screenPos.y - screenSize - 10}
+          textAnchor="middle"
+          fill={spinnerColor}
+          fontSize={12}
+          fontWeight="bold"
+        >
+          {playerName}
+        </Text>
+      )}
     </G>
   );
 });
