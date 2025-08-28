@@ -461,34 +461,48 @@ export class GameRoom {
   }
 
   /**
-   * Check boundary collisions (game over)
+   * Check boundary collisions (bounce off walls instead of elimination)
    */
   private checkBoundaryCollisions(player: PlayerData): void {
     const spinner = player.spinner;
-    const margin = spinner.size;
+    const radius = spinner.size / 2; // Use radius instead of full size
+    const bounceBoost = 0.8; // Energy retained after bounce
+    let correctedPosition = false;
 
-    const hitLeft = spinner.position.x - margin < 0;
-    const hitRight = spinner.position.x + margin > GAME_CONFIG.ARENA_WIDTH;
-    const hitTop = spinner.position.y - margin < 0;
-    const hitBottom = spinner.position.y + margin > GAME_CONFIG.ARENA_HEIGHT;
+    // Left boundary
+    if (spinner.position.x - radius < 0) {
+      spinner.position.x = radius;
+      spinner.velocity.x = Math.abs(spinner.velocity.x) * bounceBoost;
+      correctedPosition = true;
+    }
+    
+    // Right boundary
+    if (spinner.position.x + radius > GAME_CONFIG.ARENA_WIDTH) {
+      spinner.position.x = GAME_CONFIG.ARENA_WIDTH - radius;
+      spinner.velocity.x = -Math.abs(spinner.velocity.x) * bounceBoost;
+      correctedPosition = true;
+    }
+    
+    // Top boundary
+    if (spinner.position.y - radius < 0) {
+      spinner.position.y = radius;
+      spinner.velocity.y = Math.abs(spinner.velocity.y) * bounceBoost;
+      correctedPosition = true;
+    }
+    
+    // Bottom boundary
+    if (spinner.position.y + radius > GAME_CONFIG.ARENA_HEIGHT) {
+      spinner.position.y = GAME_CONFIG.ARENA_HEIGHT - radius;
+      spinner.velocity.y = -Math.abs(spinner.velocity.y) * bounceBoost;
+      correctedPosition = true;
+    }
 
-    if (hitLeft || hitRight || hitTop || hitBottom) {
-      // Player is eliminated
-      player.isAlive = false;
-      console.log(`💀 Player ${player.name} eliminated by boundary collision:`, {
-        position: spinner.position,
-        size: spinner.size,
-        margin,
-        hitLeft,
-        hitRight,
-        hitTop,
-        hitBottom,
-        arenaWidth: GAME_CONFIG.ARENA_WIDTH,
-        arenaHeight: GAME_CONFIG.ARENA_HEIGHT
+    if (correctedPosition) {
+      console.log(`🏀 Player ${player.name} bounced off boundary:`, {
+        newPosition: { x: spinner.position.x.toFixed(1), y: spinner.position.y.toFixed(1) },
+        newVelocity: { x: spinner.velocity.x.toFixed(1), y: spinner.velocity.y.toFixed(1) },
+        radius
       });
-      
-      // Notify players
-      this.io.to(this.room.code).emit('PLAYER_ELIMINATED', { playerId: player.id });
     }
   }
 
