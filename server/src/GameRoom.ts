@@ -394,6 +394,9 @@ export class GameRoom {
       this.checkBoundaryCollisions(player);
     }
 
+    // Check player-to-player collisions
+    this.checkPlayerCollisions();
+
     // Check for game over
     this.checkGameOver();
   }
@@ -504,6 +507,140 @@ export class GameRoom {
         radius
       });
     }
+  }
+
+  /**
+   * Check player-to-player collisions
+   */
+  private checkPlayerCollisions(): void {
+    const alivePlayers = Array.from(this.room.gameState.players.values()).filter(p => p.isAlive);
+    
+    // Check all pairs of players
+    for (let i = 0; i < alivePlayers.length; i++) {
+      for (let j = i + 1; j < alivePlayers.length; j++) {
+        const player1 = alivePlayers[i];
+        const player2 = alivePlayers[j];
+        
+        // Skip if either player is already eliminated
+        if (!player1.isAlive || !player2.isAlive) continue;
+        
+        const collision = circleCollision(
+          player1.spinner.position,
+          player1.spinner.size / 2,
+          player2.spinner.position,
+          player2.spinner.size / 2
+        );
+        
+        if (collision.hasCollision) {
+          this.handlePlayerCollision(player1, player2);
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle collision between two players
+   */
+  private handlePlayerCollision(player1: PlayerData, player2: PlayerData): void {
+    const size1 = player1.spinner.size;
+    const size2 = player2.spinner.size;
+    const sizeRatio = Math.max(size1, size2) / Math.min(size1, size2);
+    const eliminationThreshold = 1.3; // Larger player must be 30% bigger to eliminate
+    
+    console.log(`⚔️ Player collision: ${player1.name} (${size1.toFixed(1)}) vs ${player2.name} (${size2.toFixed(1)}), ratio: ${sizeRatio.toFixed(2)}`);
+    
+    if (sizeRatio >= eliminationThreshold) {
+      // Eliminate smaller player, grow larger player
+      let victor: PlayerData, victim: PlayerData;
+      
+      if (size1 > size2) {
+        victor = player1;
+        victim = player2;
+      } else {
+        victor = player2;
+        victim = player1;
+      }
+      
+      // Eliminate victim
+      victim.isAlive = false;
+      
+      // Grow victor (gain 50% of victim's size)
+      const growthAmount = victim.spinner.size * 0.5;
+      victor.spinner.size += growthAmount;
+      victor.score = victor.spinner.size;
+      
+      // Adjust victor's max speed based on new size
+      victor.spinner.maxSpeed = GAME_CONFIG.SPINNER_INITIAL_SPEED * 
+        (GAME_CONFIG.SPINNER_INITIAL_SIZE / victor.spinner.size);
+      
+      console.log(`💀 ${victim.name} eliminated by ${victor.name}! ${victor.name} grew to ${victor.spinner.size.toFixed(1)}`);
+      
+      // Notify all players
+      this.io.to(this.room.code).emit('PLAYER_ELIMINATED', { 
+        playerId: victim.id,
+        eliminatedBy: victor.id,
+        victorNewSize: victor.spinner.size
+      });
+      
+    } else {
+      // Bounce off each other
+      this.bouncePlayersApart(player1, player2);
+    }
+  }
+
+  /**
+   * Bounce two players apart when they collide
+   */
+  private bouncePlayersApart(player1: PlayerData, player2: PlayerData): void {
+    const pos1 = player1.spinner.position;
+    const pos2 = player2.spinner.position;
+    
+    // Calculate collision normal (direction from player1 to player2)
+    const dx = pos2.x - pos1.x;
+    const dy = pos2.y - pos1.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance === 0) return; // Prevent division by zero
+    
+    const normalX = dx / distance;
+    const normalY = dy / distance;
+    
+    // Separate players so they don't overlap
+    const totalRadius = (player1.spinner.size + player2.spinner.size) / 2;
+    const overlap = totalRadius - distance;
+    
+    if (overlap > 0) {
+      const separationX = normalX * overlap * 0.5;
+      const separationY = normalY * overlap * 0.5;
+      
+      player1.spinner.position.x -= separationX;
+      player1.spinner.position.y -= separationY;
+      player2.spinner.position.x += separationX;
+      player2.spinner.position.y += separationY;
+    }
+    
+    // Apply bounce to velocities
+    const bounceForce = 150; // Bounce strength
+    const mass1 = player1.spinner.size;
+    const mass2 = player2.spinner.size;
+    
+    // Simple elastic collision (momentum conservation)
+    const relativeVelocityX = player1.spinner.velocity.x - player2.spinner.velocity.x;
+    const relativeVelocityY = player1.spinner.velocity.y - player2.spinner.velocity.y;
+    const velocityAlongNormal = relativeVelocityX * normalX + relativeVelocityY * normalY;
+    
+    // Don't resolve if velocities are separating
+    if (velocityAlongNormal > 0) return;
+    
+    const restitution = 0.8; // Bounciness factor
+    const impulse = -(1 + restitution) * velocityAlongNormal / (1/mass1 + 1/mass2);
+    
+    player1.spinner.velocity.x += (impulse / mass1) * normalX;
+    player1.spinner.velocity.y += (impulse / mass1) * normalY;
+    player2.spinner.velocity.x -= (impulse / mass2) * normalX;
+    player2.spinner.velocity.y -= (impulse / mass2) * normalY;
+    
+    console.log(`🏀 Players ${player1.name} and ${player2.name} bounced off each other`);
   }
 
   /**
