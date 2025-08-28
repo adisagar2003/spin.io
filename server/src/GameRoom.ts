@@ -41,7 +41,7 @@ export class GameRoom {
   /**
    * Add a player to the room
    */
-  addPlayer(socket: Socket, playerName: string): { success: boolean; playerId?: string; error?: string } {
+  addPlayer(socket: Socket, playerName: string, providedPlayerId?: string): { success: boolean; playerId?: string; error?: string } {
     // Check room capacity
     if (this.room.players.size >= GAME_CONFIG.MAX_PLAYERS_PER_ROOM) {
       return { success: false, error: 'Room is full' };
@@ -52,15 +52,34 @@ export class GameRoom {
       return { success: false, error: 'Game already in progress' };
     }
 
-    const playerId = socket.id;
+    const playerId = providedPlayerId || socket.id;
     const isHost = this.room.players.size === 0;
+    
+    console.log(`🎮 Adding player to room ${this.room.code}:`, {
+      playerName,
+      providedPlayerId,
+      socketId: socket.id,
+      finalPlayerId: playerId,
+      isHost,
+      currentPlayerCount: this.room.players.size
+    });
 
-    // Create player spinner
+    // Create player spinner with unique spawn position
+    const spawnAngle = (this.room.players.size * 2 * Math.PI) / GAME_CONFIG.MAX_PLAYERS_PER_ROOM;
+    const spawnRadius = 150; // Distance from center (increased for safety)
+    const centerX = GAME_CONFIG.ARENA_WIDTH / 2;
+    const centerY = GAME_CONFIG.ARENA_HEIGHT / 2;
+    
+    let spawnX = centerX + Math.cos(spawnAngle) * spawnRadius + randomFloat(-30, 30);
+    let spawnY = centerY + Math.sin(spawnAngle) * spawnRadius + randomFloat(-30, 30);
+    
+    // Ensure spawn position is within safe bounds
+    const safeMargin = GAME_CONFIG.SPINNER_INITIAL_SIZE + 20;
+    spawnX = Math.max(safeMargin, Math.min(GAME_CONFIG.ARENA_WIDTH - safeMargin, spawnX));
+    spawnY = Math.max(safeMargin, Math.min(GAME_CONFIG.ARENA_HEIGHT - safeMargin, spawnY));
+    
     const spinner: Spinner = {
-      position: createVector2(
-        GAME_CONFIG.ARENA_WIDTH / 2 + randomFloat(-50, 50),
-        GAME_CONFIG.ARENA_HEIGHT / 2 + randomFloat(-50, 50)
-      ),
+      position: createVector2(spawnX, spawnY),
       velocity: createVector2(0, 0),
       targetDirection: createVector2(0, 0),
       size: GAME_CONFIG.SPINNER_INITIAL_SIZE,
@@ -68,6 +87,14 @@ export class GameRoom {
       rotation: 0,
       maxSpeed: GAME_CONFIG.SPINNER_INITIAL_SPEED
     };
+    
+    console.log(`🎯 Player ${playerName} spawned at:`, {
+      playerId,
+      spawnAngle: (spawnAngle * 180 / Math.PI).toFixed(1) + '°',
+      spawnRadius,
+      position: { x: spawnX.toFixed(1), y: spawnY.toFixed(1) },
+      playerCount: this.room.players.size + 1
+    });
 
     const playerData: PlayerData = {
       id: playerId,
@@ -81,7 +108,15 @@ export class GameRoom {
     // Set host if first player
     if (isHost) {
       this.room.host = playerId;
+      console.log(`👑 ${playerName} (${playerId}) is now the host of room ${this.room.code}`);
     }
+    
+    console.log(`🎮 Room ${this.room.code} host assignment:`, {
+      currentHost: this.room.host,
+      newPlayerId: playerId,
+      newPlayerIsHost: isHost,
+      totalPlayers: this.room.players.size + 1
+    });
 
     this.room.players.set(playerId, playerData);
     this.room.gameState.players.set(playerId, playerData);
@@ -141,6 +176,28 @@ export class GameRoom {
     this.room.gameState.dots = this.generateDots();
     this.room.gameState.timeElapsed = 0;
     this.room.isPlaying = true;
+    
+    // Reset all players to alive state and respawn them with collision avoidance
+    const spawnPositions = this.generateSafeSpawnPositions(this.room.gameState.players.size);
+    let spawnIndex = 0;
+    
+    for (const player of this.room.gameState.players.values()) {
+      player.isAlive = true;
+      player.score = GAME_CONFIG.SPINNER_INITIAL_SIZE;
+      
+      const spawnPosition = spawnPositions[spawnIndex++];
+      
+      player.spinner.position = spawnPosition;
+      player.spinner.velocity = createVector2(0, 0);
+      player.spinner.targetDirection = createVector2(0, 0);
+      player.spinner.size = GAME_CONFIG.SPINNER_INITIAL_SIZE;
+      player.spinner.maxSpeed = GAME_CONFIG.SPINNER_INITIAL_SPEED;
+      
+      console.log(`🎮 Respawned player ${player.name} at:`, { 
+        x: spawnPosition.x.toFixed(1), 
+        y: spawnPosition.y.toFixed(1) 
+      });
+    }
 
     console.log(`Game started in room ${this.room.code} by host ${playerId}`);
     
@@ -148,6 +205,81 @@ export class GameRoom {
     this.startGameLoop();
     
     return { success: true };
+  }
+
+  /**
+   * Generate safe spawn positions for all players with collision avoidance
+   */
+  private generateSafeSpawnPositions(playerCount: number): Vector2[] {
+    const positions: Vector2[] = [];
+    const minDistance = GAME_CONFIG.SPINNER_INITIAL_SIZE * 4; // Minimum distance between players
+    const safeMargin = GAME_CONFIG.SPINNER_INITIAL_SIZE + 30; // Distance from arena edges
+    const centerX = GAME_CONFIG.ARENA_WIDTH / 2;
+    const centerY = GAME_CONFIG.ARENA_HEIGHT / 2;
+    const maxAttempts = 100;
+    
+    console.log(`🎯 Generating ${playerCount} safe spawn positions with minDistance: ${minDistance}, safeMargin: ${safeMargin}`);
+    
+    for (let i = 0; i < playerCount; i++) {
+      let validPosition = false;
+      let attempts = 0;
+      let spawnX: number, spawnY: number;
+      
+      while (!validPosition && attempts < maxAttempts) {
+        attempts++;
+        
+        // Try evenly distributed angles first, then add randomization
+        if (attempts <= 1 && playerCount <= 4) {
+          // Use predefined positions for up to 4 players
+          const angle = (i * 2 * Math.PI) / playerCount + (Math.PI / 4); // Start at 45 degrees
+          const radius = Math.min(150, (Math.min(GAME_CONFIG.ARENA_WIDTH, GAME_CONFIG.ARENA_HEIGHT) / 2) - safeMargin - 50);
+          spawnX = centerX + Math.cos(angle) * radius;
+          spawnY = centerY + Math.sin(angle) * radius;
+        } else {
+          // Random position within safe bounds
+          spawnX = safeMargin + Math.random() * (GAME_CONFIG.ARENA_WIDTH - 2 * safeMargin);
+          spawnY = safeMargin + Math.random() * (GAME_CONFIG.ARENA_HEIGHT - 2 * safeMargin);
+        }
+        
+        // Check distance from all existing positions
+        validPosition = true;
+        for (const existingPos of positions) {
+          const distance = Math.sqrt(
+            Math.pow(spawnX - existingPos.x, 2) + 
+            Math.pow(spawnY - existingPos.y, 2)
+          );
+          
+          if (distance < minDistance) {
+            validPosition = false;
+            break;
+          }
+        }
+        
+        // Ensure position is within safe bounds (double-check)
+        if (validPosition) {
+          validPosition = spawnX >= safeMargin && 
+                         spawnX <= GAME_CONFIG.ARENA_WIDTH - safeMargin &&
+                         spawnY >= safeMargin && 
+                         spawnY <= GAME_CONFIG.ARENA_HEIGHT - safeMargin;
+        }
+      }
+      
+      if (!validPosition) {
+        // Fallback to a safe position if we couldn't find one
+        console.warn(`⚠️ Could not find safe spawn position for player ${i} after ${maxAttempts} attempts, using fallback`);
+        const fallbackAngle = (i * 2 * Math.PI) / playerCount;
+        const fallbackRadius = 100;
+        spawnX = centerX + Math.cos(fallbackAngle) * fallbackRadius;
+        spawnY = centerY + Math.sin(fallbackAngle) * fallbackRadius;
+      }
+      
+      const position = createVector2(spawnX, spawnY);
+      positions.push(position);
+      
+      console.log(`✅ Player ${i + 1} spawn position: (${spawnX.toFixed(1)}, ${spawnY.toFixed(1)}) after ${attempts} attempts`);
+    }
+    
+    return positions;
   }
 
   /**
@@ -177,12 +309,20 @@ export class GameRoom {
   broadcastRoomState(): void {
     const playersArray = Array.from(this.room.players.values());
     
-    this.io.to(this.room.code).emit('ROOM_STATE', {
+    const roomState = {
       roomCode: this.room.code,
       players: playersArray,
       isPlaying: this.room.isPlaying,
       phase: this.room.gameState.phase
+    };
+    
+    console.log(`📡 Broadcasting room state for ${this.room.code}:`, {
+      players: playersArray.map(p => ({ id: p.id, name: p.name, isHost: p.isHost })),
+      currentHost: this.room.host,
+      isPlaying: this.room.isPlaying
     });
+    
+    this.io.to(this.room.code).emit('ROOM_STATE', roomState);
   }
 
   /**
@@ -327,14 +467,25 @@ export class GameRoom {
     const spinner = player.spinner;
     const margin = spinner.size;
 
-    if (spinner.position.x - margin < 0 || 
-        spinner.position.x + margin > GAME_CONFIG.ARENA_WIDTH ||
-        spinner.position.y - margin < 0 || 
-        spinner.position.y + margin > GAME_CONFIG.ARENA_HEIGHT) {
-      
+    const hitLeft = spinner.position.x - margin < 0;
+    const hitRight = spinner.position.x + margin > GAME_CONFIG.ARENA_WIDTH;
+    const hitTop = spinner.position.y - margin < 0;
+    const hitBottom = spinner.position.y + margin > GAME_CONFIG.ARENA_HEIGHT;
+
+    if (hitLeft || hitRight || hitTop || hitBottom) {
       // Player is eliminated
       player.isAlive = false;
-      console.log(`Player ${player.name} eliminated by boundary collision`);
+      console.log(`💀 Player ${player.name} eliminated by boundary collision:`, {
+        position: spinner.position,
+        size: spinner.size,
+        margin,
+        hitLeft,
+        hitRight,
+        hitTop,
+        hitBottom,
+        arenaWidth: GAME_CONFIG.ARENA_WIDTH,
+        arenaHeight: GAME_CONFIG.ARENA_HEIGHT
+      });
       
       // Notify players
       this.io.to(this.room.code).emit('PLAYER_ELIMINATED', { playerId: player.id });
@@ -361,6 +512,10 @@ export class GameRoom {
    */
   private checkGameOver(): void {
     const alivePlayers = Array.from(this.room.gameState.players.values()).filter(p => p.isAlive);
+    const totalPlayers = this.room.gameState.players.size;
+    
+    console.log(`🏁 Game over check - Alive: ${alivePlayers.length}/${totalPlayers}`, 
+      alivePlayers.map(p => `${p.name}(${p.isAlive ? 'alive' : 'dead'})`));
     
     if (alivePlayers.length <= 1) {
       // Game over
@@ -370,7 +525,7 @@ export class GameRoom {
       
       const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
       
-      console.log(`Game over in room ${this.room.code}, winner: ${winner?.name || 'None'}`);
+      console.log(`🏆 Game over in room ${this.room.code}, winner: ${winner?.name || 'None'}`);
       
       this.io.to(this.room.code).emit('GAME_OVER', { winner });
     }
