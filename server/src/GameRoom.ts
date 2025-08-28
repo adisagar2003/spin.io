@@ -244,7 +244,8 @@ export class GameRoom {
     for (let i = 0; i < playerCount; i++) {
       let validPosition = false;
       let attempts = 0;
-      let spawnX: number, spawnY: number;
+      let spawnX = 0;
+      let spawnY = 0;
       
       while (!validPosition && attempts < maxAttempts) {
         attempts++;
