@@ -204,10 +204,8 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
     // Send input to server for authoritative processing
     networkManager.sendInput(direction);
     
-    // Also apply to local engine for client-side prediction
-    if (gameEngineRef.current) {
-      gameEngineRef.current.setSpinnerDirection(direction);
-    }
+    // Note: We rely on server-authoritative state, no client-side prediction
+    // This reduces complexity and prevents input conflicts
   }, [networkManager]);
 
   const handleGameEngineReady = useCallback((engine: GameEngine) => {
