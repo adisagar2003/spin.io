@@ -2,7 +2,7 @@
  * Multiplayer game container that integrates network state with local rendering
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GameContainerWithRef } from '../features/game/GameContainer';
 import { GameEngine } from '../features/game/GameEngine';
@@ -25,6 +25,7 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
 }) => {
   const gameContainerRef = useRef<GameContainerRef>(null);
   const gameEngineRef = useRef<GameEngine>(new GameEngine());
+  const [currentMultiplayerState, setCurrentMultiplayerState] = useState<MultiplayerGameState | null>(null);
 
   // Convert multiplayer state to local game state format with all players
   const convertToLocalGameState = useCallback((
@@ -100,12 +101,31 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
       }
 
       try {
-        // Convert to local format and update engine
-        const localState = convertToLocalGameState(data, currentPlayerId);
+        // Convert to local multiplayer format
+        const localMultiplayerState = convertToLocalGameState(data, currentPlayerId);
+        
+        // Store multiplayer state for rendering
+        setCurrentMultiplayerState(localMultiplayerState);
+        
+        // Create compatibility layer for GameEngine (uses current player as main spinner)
+        const currentPlayer = localMultiplayerState.players.find(p => p.isCurrentPlayer);
+        if (!currentPlayer) {
+          console.error('❌ Current player not found in local state');
+          return;
+        }
+        
+        const engineCompatibleState: GameState = {
+          phase: localMultiplayerState.phase,
+          spinner: currentPlayer.spinner,
+          dots: localMultiplayerState.dots,
+          score: localMultiplayerState.score,
+          timeElapsed: localMultiplayerState.timeElapsed,
+          arena: localMultiplayerState.arena
+        };
         
         // Update the local game engine with server state
         // This overrides client prediction with authoritative server state
-        gameEngineRef.current.setGameState(localState);
+        gameEngineRef.current.setGameState(engineCompatibleState);
         
         console.log('✅ Game state updated successfully');
         
@@ -204,6 +224,7 @@ export const MultiplayerGameContainer: React.FC<MultiplayerGameContainerProps> =
         onInputUpdate={handleInput}
         onGameEngineReady={handleGameEngineReady}
         isMultiplayer={true}
+        multiplayerGameState={currentMultiplayerState || undefined}
       />
     </View>
   );

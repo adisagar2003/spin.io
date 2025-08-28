@@ -9,7 +9,7 @@ import { GameEngine } from './GameEngine';
 import { GameCanvas } from '@components/GameCanvas';
 import { useGameLoop } from '@hooks/useGameLoop';
 import { useInputHandler } from '@hooks/useInputHandler';
-import { GameState, GamePhase, Vector2 } from '../../types';
+import { GameState, MultiplayerGameState, GamePhase, Vector2 } from '../../types';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -28,6 +28,8 @@ interface GameContainerProps {
   onGameEngineReady?: (engine: GameEngine) => void;
   /** Is this a multiplayer game */
   isMultiplayer?: boolean;
+  /** Multiplayer game state (overrides engine state for rendering) */
+  multiplayerGameState?: MultiplayerGameState;
 }
 
 /**
@@ -42,6 +44,7 @@ export const GameContainer: React.FC<GameContainerProps> = ({
   onInputUpdate,
   onGameEngineReady,
   isMultiplayer = false,
+  multiplayerGameState,
 }) => {
   // Game engine instance (use external ref if provided, otherwise create new)
   const internalEngineRef = useRef<GameEngine>(new GameEngine());
@@ -205,7 +208,7 @@ export const GameContainer: React.FC<GameContainerProps> = ({
       <View style={[styles.canvasContainer, { width: canvasWidth, height: canvasHeight }]}>
         <View style={StyleSheet.absoluteFill} {...eventHandlers}>
           <GameCanvas
-            gameState={gameState}
+            gameState={multiplayerGameState || gameState}
             width={canvasWidth}
             height={canvasHeight}
             cameraOffset={cameraOffset}
